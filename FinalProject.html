@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Alexander Fortman" />
+
+
+<title>Predicting Cryptcurrency/Stock Prices Using Time Series Forecasting Models</title>
+
+<script src="FinalProject_files/header-attrs-2.11/header-attrs.js"></script>
+<script src="FinalProject_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="FinalProject_files/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="FinalProject_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="FinalProject_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="FinalProject_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="FinalProject_files/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="FinalProject_files/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="FinalProject_files/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="FinalProject_files/navigation-1.1/tabsets.js"></script>
+<script src="FinalProject_files/navigation-1.1/codefolding.js"></script>
+<script src="FinalProject_files/navigation-1.1/sourceembed.js"></script>
+<link href="FinalProject_files/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="FinalProject_files/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+#rmd-source-code {
+  display: none;
+}
+</style>
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+<li role="separator" class="divider"></li>
+<li><a id="rmd-download-source" href="#">Download Rmd</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Predicting Cryptcurrency/Stock Prices Using Time Series Forecasting Models</h1>
+<h4 class="author">Alexander Fortman</h4>
+
+</div>
+
+
+<p>The goal of this data science project is to build a model which can accurately predict cryptocurrency and stock prices solely based on previous time series data. No external predictors will be used. The forecasting methods to be used are: + Naive forecast + Holt-Winters + Arima + h2o’s autoML (automated machine learning models) + Meta’s (formerly Facebook’s) Prophet</p>
+<div id="setup-and-packages" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Setup and Packages</h1>
+<pre class="r"><code>setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+knitr::opts_chunk$set(cache = T, warning = F, message = F)
+
+if(require(pacman)==FALSE) install.packages(&quot;pacman&quot;) # package manager</code></pre>
+<pre><code>## Loading required package: pacman</code></pre>
+<pre class="r"><code>pacman::p_load(tidyverse, # general functions
+               hrbrthemes, reactable,
+               magrittr, # for 2-way pipe
+               tidyquant, # for time series data
+               rvest, # stock names
+               data.table, DT, 
+               h2o, rsample, prophet, # model building
+               forecast, timetk, imputeTS, fpp2, # time series helpers
+               doParallel, foreach, furrr) # parallelization</code></pre>
+</div>
+<div id="get-data-pre-processing" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Get Data &amp; Pre-processing</h1>
+<div id="stocks" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Stocks</h2>
+<p>To get the stock names I will scrape the S&amp;P 500 Wikipedia page.</p>
+<pre class="r"><code>content = read_html(&quot;https://en.wikipedia.org/w/index.php?title=List_of_S%26P_500_companies&amp;oldid=1014924736&quot;)
+tables &lt;- content %&gt;% html_table(fill = TRUE)
+table &lt;- tables[[1]]
+sp_list &lt;- table[-1,c(1,7)]
+names(sp_list)[2]=&#39;AddedDate&#39;</code></pre>
+<p>To ensure the time series has no empty values, I am filtering stocks which were created after 2009. Also, I am removing Berkshire Hathaway because it was giving problems. After, I will keep just 60 stocks.</p>
+<pre class="r"><code>sp_list %&lt;&gt;% filter(AddedDate &lt; &#39;2010-01-01&#39;)
+sp_list = sp_list[-49,]
+sp_list %&lt;&gt;% filter(Symbol != &quot;BF.B&quot;) 
+stock_list = sp_list$Symbol[1:60]</code></pre>
+<p>Below I am setting the date ranges for the time series.</p>
+<pre class="r"><code>beg = as_date(&quot;2017-01-01&quot;)
+end = as_date(&quot;2020-01-01&quot;)</code></pre>
+<pre class="r"><code>stocks = tq_get(x = stock_list,
+                from = beg,
+                to = end, periodicity = &quot;weekly&quot;) # getting the time series data
+
+stocks %&lt;&gt;% select(symbol, date, adjusted)</code></pre>
+<pre class="r"><code>head(stocks)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   symbol date       adjusted
+##   &lt;chr&gt;  &lt;date&gt;        &lt;dbl&gt;
+## 1 ABT    2017-01-01     37.0
+## 2 ABT    2017-01-08     37.2
+## 3 ABT    2017-01-15     37.0
+## 4 ABT    2017-01-22     37.5
+## 5 ABT    2017-01-29     39.1
+## 6 ABT    2017-02-05     39.1</code></pre>
+</div>
+<div id="indexes" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Indexes</h2>
+<p>Now, I am getting the data for 5 stock market indexes.</p>
+<pre class="r"><code>ind_list = c(&#39;^DJI&#39;,&#39;^NYA&#39;,&#39;^GSPC&#39;,&#39;^IXIC&#39;,&#39;^N225&#39;)
+ind = tq_get(x = ind_list, from = &quot;2015-01-01&quot;, to = &quot;2018-01-01&quot;, periodicity = &quot;weekly&quot;) %&gt;% select(symbol,date,adjusted)</code></pre>
+<pre class="r"><code>head(ind)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   symbol date       adjusted
+##   &lt;chr&gt;  &lt;date&gt;        &lt;dbl&gt;
+## 1 ^DJI   2015-01-01   17585.
+## 2 ^DJI   2015-01-08   17427.
+## 3 ^DJI   2015-01-15   17554.
+## 4 ^DJI   2015-01-22   17191.
+## 5 ^DJI   2015-01-29   17673.
+## 6 ^DJI   2015-02-05   17862.</code></pre>
+</div>
+<div id="crypto" class="section level2" number="2.3">
+<h2><span class="header-section-number">2.3</span> Crypto</h2>
+<p>To get the cryptocurrency data, I am using the CryptoCompare API. First I need to define some variables for the query, includes he cryptocurrencies I want.</p>
+<pre class="r"><code>pacman::p_load(jsonlite)
+base = &quot;https://min-api.cryptocompare.com/data/v2/histoday?fsym=&quot;
+
+name = c(&quot;BTC&quot;,&quot;ETH&quot;,&quot;BNB&quot;,&quot;USDT&quot;,&quot;SOL&quot;,&quot;DOT&quot;,&quot;ADA&quot;,&quot;XRP&quot;,&quot;DOGE&quot;,&quot;SHIB&quot;,&quot;LTC&quot;,&quot;WBTC&quot;,&quot;UNI&quot;,&quot;BUSD&quot;,&quot;MATIC&quot;,&quot;MANA&quot;,&quot;ALGO&quot;,&quot;LINK&quot;,&quot;THETA&quot;,&quot;SAND&quot;,&quot;HNT&quot;,&quot;MIOTA&quot;,&quot;CAKE&quot;,&quot;MKR&quot;,&quot;NEO&quot;,&quot;BTT&quot;,&quot;EGLD&quot;,&quot;VET&quot;,&quot;ICP&quot;,&quot;XLM&quot;,&quot;AVAX&quot;,&quot;CRO&quot;,&quot;ATOM&quot;,&quot;NEAR&quot;,&quot;RUNE&quot;)
+
+crypto_list = name
+
+t = &quot;&amp;tsym=USD&quot;
+
+agg = &quot;&amp;aggregate=days&quot;
+
+lim = &quot;&amp;limit=360&quot;
+
+key  = &quot;&amp;api_key=7bf4448fc2818704eace0e470e4f87eb108e90e760bef562f1df81687616b040&quot;</code></pre>
+<p>Here I am preparing the urls which I will query in the next code chunk.</p>
+<pre class="r"><code>urls = c(paste0(base,name[1],t,lim,key),paste0(base,name[2],t,lim,key),paste0(base,name[3],t,lim,key),
+         paste0(base,name[4],t,lim,key),paste0(base,name[5],t,lim,key),paste0(base,name[6],t,lim,key),
+         paste0(base,name[7],t,lim,key),paste0(base,name[8],t,lim,key),paste0(base,name[9],t,lim,key),
+         paste0(base,name[10],t,lim,key),paste0(base,name[11],t,lim,key),paste0(base,name[12],t,lim,key),
+         paste0(base,name[13],t,lim,key),paste0(base,name[14],t,lim,key),paste0(base,name[15],t,lim,key),
+         paste0(base,name[16],t,lim,key),paste0(base,name[17],t,lim,key),paste0(base,name[18],t,lim,key),
+         paste0(base,name[19],t,lim,key),paste0(base,name[20],t,lim,key),paste0(base,name[21],t,lim,key),
+         paste0(base,name[22],t,lim,key),paste0(base,name[23],t,lim,key),paste0(base,name[24],t,lim,key),
+         paste0(base,name[25],t,lim,key),paste0(base,name[26],t,lim,key),paste0(base,name[27],t,lim,key),
+         paste0(base,name[28],t,lim,key),paste0(base,name[29],t,lim,key),paste0(base,name[30],t,lim,key),paste0(base,name[31],t,lim,key),paste0(base,name[32],t,lim,key),paste0(base,name[33],t,lim,key),paste0(base,name[34],t,lim,key),paste0(base,name[35],t,lim,key)
+)</code></pre>
+<p>Now I will make 35 API calls at once for the data.</p>
+<pre class="r"><code>cryptolist = map(.x = urls, .f = fromJSON)</code></pre>
+<p>Here I convert the data types so I can format them neatly.</p>
+<pre class="r"><code>unlist_cc = function(x){
+  temp = x$Data$Data
+}
+crypto = map_df(.x = cryptolist, .f = unlist_cc)</code></pre>
+<p>The last step for the crypto data is to format it in a readable format.</p>
+<pre class="r"><code>crypto %&lt;&gt;% select(time, close)
+crypto$time %&lt;&gt;% as_datetime() %&gt;% as_date()
+crypto$symbol = rep(name, each = (nrow(crypto)/length(crypto_list))) 
+crypto %&lt;&gt;% rename(date = time)
+crypto %&lt;&gt;% relocate(symbol,.before=date)</code></pre>
+<pre class="r"><code>head(crypto)</code></pre>
+<pre><code>##   symbol       date    close
+## 1    BTC 2021-04-21 53803.25
+## 2    BTC 2021-04-22 51717.61
+## 3    BTC 2021-04-23 51178.03
+## 4    BTC 2021-04-24 50115.99
+## 5    BTC 2021-04-25 49120.97
+## 6    BTC 2021-04-26 54062.29</code></pre>
+<p>For the sake of managing my R environment, I remove objects which are no longer useful for the upcoming analysis.</p>
+<p>The final pre-processing step is renaming the price variable for consistency.</p>
+<pre class="r"><code>stocks %&lt;&gt;% rename(price = adjusted)
+ind %&lt;&gt;% rename(price = adjusted)
+crypto %&lt;&gt;% rename(price = close)</code></pre>
+<hr />
+</div>
+</div>
+<div id="rolling-origins" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Rolling Origins</h1>
+<p>For time series data, it is not appropriate to split time series data into a training and validation set in which the first 80% (or other amount) of the dates are used for training. Rolling origin evaluation fixes this by first partitioning the data, but validation is done sequentially on each date starting at the beginning of the validation partition.</p>
+<div id="functions" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Functions</h2>
+<p>Since I am working with 100 time series, I must apply functions to each stock/crypto. Unfortunately, any apply function will not work for this project since I must aggregate results and run other functions within the loops. The first loop function is a rolling origin function which aggregates results.</p>
+<pre class="r"><code>rolling = function(dat, dat_list, initial){
+  
+  results = data.frame(splits = c(), id = c())
+  
+  for (i in dat_list){ 
+    temp = filter(dat, symbol == i)
+    temp = na_interpolation(temp)
+    temp_res = rolling_origin(temp, initial = which(temp$date == as.Date(initial)),
+                              assess = 1,
+                              cumulative = TRUE) 
+    results = rbind(results, temp_res)
+  }
+  return(results)
+}</code></pre>
+<p>Here we extract the training and validation data for the models.</p>
+<pre class="r"><code>getinfo = function(df, dat_list){
+  df %&lt;&gt;% mutate(
+  symbol = rep(dat_list, each = (nrow(df)/length(dat_list))),
+  data = map(.x = splits, .f = analysis),
+  trainDates = map(.x = data, .f = extract2, &#39;date&#39;),
+  trainPrice =  map(.x = data, .f = extract2, &#39;price&#39;),
+  target_data = map(.x = splits, .f = assessment),
+  targetDate = map(.x = target_data, .f = extract2, &#39;date&#39;),
+  targetPrice =  map_dbl(.x = target_data, .f = extract2, &#39;price&#39;))
+  return(df)
+}</code></pre>
+<p>Since I created functions above, now all I have to do is pass each group of data (stocks, indexes, crypto) through the functions.</p>
+</div>
+<div id="stocks-1" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Stocks</h2>
+<pre class="r"><code>initial_s = stocks$date[.8*nrow(stocks)/length(stock_list)]
+new_stocks = rolling(stocks, stock_list, initial_s)
+new_stocks = getinfo(new_stocks, stock_list)</code></pre>
+<pre class="r"><code>head(new_stocks)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   splits    id     symbol data     trainDates trainPrice target_data  targetDate
+##   &lt;list&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;list&gt;   &lt;list&gt;     &lt;list&gt;     &lt;list&gt;       &lt;list&gt;    
+## 1 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [12~ &lt;dbl [125~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 2 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [12~ &lt;dbl [126~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 3 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [12~ &lt;dbl [127~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 4 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [12~ &lt;dbl [128~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 5 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [12~ &lt;dbl [129~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 6 &lt;split [~ Slice~ ABT    &lt;tibble~ &lt;date [13~ &lt;dbl [130~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## # ... with 1 more variable: targetPrice &lt;dbl&gt;</code></pre>
+</div>
+<div id="indexes-1" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> Indexes</h2>
+<pre class="r"><code>initial_i = ind$date[.8*nrow(ind)/length(ind_list)]
+new_index = rolling(ind, ind_list, initial_i)
+new_index = getinfo(new_index, ind_list)</code></pre>
+<pre class="r"><code>head(new_index)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   splits    id     symbol data     trainDates trainPrice target_data  targetDate
+##   &lt;list&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;list&gt;   &lt;list&gt;     &lt;list&gt;     &lt;list&gt;       &lt;list&gt;    
+## 1 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [12~ &lt;dbl [125~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 2 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [12~ &lt;dbl [126~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 3 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [12~ &lt;dbl [127~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 4 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [12~ &lt;dbl [128~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 5 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [12~ &lt;dbl [129~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## 6 &lt;split [~ Slice~ ^DJI   &lt;tibble~ &lt;date [13~ &lt;dbl [130~ &lt;tibble [1 ~ &lt;date [1]&gt;
+## # ... with 1 more variable: targetPrice &lt;dbl&gt;</code></pre>
+</div>
+<div id="crypto-1" class="section level2" number="3.4">
+<h2><span class="header-section-number">3.4</span> Crypto</h2>
+<pre class="r"><code>initial_c = crypto$date[.8*nrow(crypto)/length(crypto_list)]
+new_crypto = rolling(crypto, crypto_list, initial_c)
+new_crypto = getinfo(new_crypto, crypto_list)</code></pre>
+<pre class="r"><code>head(new_crypto)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   splits    id     symbol data     trainDates  trainPrice target_data targetDate
+##   &lt;list&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;list&gt;   &lt;list&gt;      &lt;list&gt;     &lt;list&gt;      &lt;list&gt;    
+## 1 &lt;split [~ Slice~ BTC    &lt;df [28~ &lt;date [288~ &lt;dbl [288~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## 2 &lt;split [~ Slice~ BTC    &lt;df [28~ &lt;date [289~ &lt;dbl [289~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## 3 &lt;split [~ Slice~ BTC    &lt;df [29~ &lt;date [290~ &lt;dbl [290~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## 4 &lt;split [~ Slice~ BTC    &lt;df [29~ &lt;date [291~ &lt;dbl [291~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## 5 &lt;split [~ Slice~ BTC    &lt;df [29~ &lt;date [292~ &lt;dbl [292~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## 6 &lt;split [~ Slice~ BTC    &lt;df [29~ &lt;date [293~ &lt;dbl [293~ &lt;df [1 x 3~ &lt;date [1]&gt;
+## # ... with 1 more variable: targetPrice &lt;dbl&gt;</code></pre>
+<hr />
+</div>
+</div>
+<div id="forecasting" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Forecasting</h1>
+<p>In this section, I will apply naive, holt-winters, arima, autoML, and prophet forecasts to each time series. Later I will compare the results of each model.</p>
+<div id="naive-ses-and-arima" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Naive, SES, and ARIMA</h2>
+<div id="function" class="section level3" number="4.1.1">
+<h3><span class="header-section-number">4.1.1</span> Function</h3>
+<p>This function applies naive, holt-winters, and arima forecasts to all the time series. I explain later why we cannot apply this simply to the other two models.</p>
+<pre class="r"><code>NHA = function(df){
+  plan(multiprocess)
+  df %&lt;&gt;% mutate(
+  Naive = future_map(.x = trainPrice, .f = naive, h = 1) %&gt;% 
+    map_dbl(.f = extract2, &quot;mean&quot;),
+  Holt = future_map(.x = trainPrice, .f = holt, h = 1) %&gt;% 
+    map_dbl(.f = extract2, &quot;mean&quot;),
+  Arima = future_map(.x = trainPrice, .f = auto.arima) %&gt;% 
+    map(.f = forecast, h = 1) %&gt;% 
+    map_dbl(.f = extract2, &quot;mean&quot;)
+)
+  return(df)
+}</code></pre>
+</div>
+<div id="stocks-2" class="section level3" number="4.1.2">
+<h3><span class="header-section-number">4.1.2</span> Stocks</h3>
+<pre class="r"><code>new_stocks = NHA(new_stocks)</code></pre>
+</div>
+<div id="indexes-2" class="section level3" number="4.1.3">
+<h3><span class="header-section-number">4.1.3</span> Indexes</h3>
+<pre class="r"><code>new_index = NHA(new_index)</code></pre>
+</div>
+<div id="crypto-2" class="section level3" number="4.1.4">
+<h3><span class="header-section-number">4.1.4</span> Crypto</h3>
+<pre class="r"><code>new_crypto = NHA(new_crypto)</code></pre>
+</div>
+</div>
+<div id="prophet" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Prophet</h2>
+<p>For some odd reason, the prophet documentation states that in order to use the model, the dates in the time series must be named “ds” and the actual values must be named “y”. If you use any other labeling, R throws errors. Because of this, I had to create a function which converts the columns names and then applies the prophet function.</p>
+<div id="function-1" class="section level3" number="4.2.1">
+<h3><span class="header-section-number">4.2.1</span> Function</h3>
+<pre class="r"><code>prophetloop = function(nf){
+  prophetfun = function(y, dates, targetDate){
+    pacman::p_load(tidyverse, magrittr, prophet)
+    df = as.data.frame(cbind(dates, y)) %&gt;% 
+      rename(ds=1,y=2)
+    df = unnest(df, cols = c(ds,y))
+    model = prophet(df, yearly.seasonality = &quot;auto&quot;,
+                    weekly.seasonality = &quot;auto&quot;)
+    targetDate %&lt;&gt;% as.data.frame() %&gt;% 
+      rename(ds=1)
+    pred = predict(model, targetDate)
+    res = pred$yhat
+    return(res)
+  }
+  
+  i = 1
+  
+  for (i in 1:nrow(nf)){
+    val = prophetfun(y = nf[i,]$trainPrice, dates = nf[i,]$trainDates, 
+                targetDate = nf[i,]$targetDate)
+    nf[i,]$Prophet = val
+    i = i + 1
+  }
+  return(nf)
+}</code></pre>
+<p>Here I simply apply the custom prophet function to the three sets of time series.</p>
+</div>
+<div id="stocks-3" class="section level3" number="4.2.2">
+<h3><span class="header-section-number">4.2.2</span> Stocks</h3>
+<pre class="r"><code>new_stocks[&#39;Prophet&#39;] = NA
+new_stocks = prophetloop(new_stocks)</code></pre>
+</div>
+<div id="indexes-3" class="section level3" number="4.2.3">
+<h3><span class="header-section-number">4.2.3</span> Indexes</h3>
+<pre class="r"><code>new_index[&#39;Prophet&#39;] = NA
+new_index = prophetloop(new_index)</code></pre>
+</div>
+<div id="crypto-3" class="section level3" number="4.2.4">
+<h3><span class="header-section-number">4.2.4</span> Crypto</h3>
+<pre class="r"><code>new_crypto[&#39;Prophet&#39;] = NA
+new_crypto = prophetloop(new_crypto)</code></pre>
+</div>
+</div>
+<div id="automl-function-applied-separately" class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> AutoML Function (Applied Separately)</h2>
+<p>AutoML is easily the hardest model to get running for my many time series. This is because autoML does not like to loop more than 30 times in a single h2o connection. As a result, I applied this function in a separate r file four times (for a total of 100 time series). I then appended all the data and brought it back into this file.</p>
+<p>Here is the function which creates new variables from just the time series data itself (no external data) so that the machine learning models have more data for prediction.</p>
+<pre class="r"><code>feat_df = tk_get_timeseries_signature(unique(data$date)) %&gt;% 
+    na.omit()
+nums = unlist(lapply(feat_df, is.numeric))
+feat_df = feat_df[,nums]
+feat_df = feat_df[c(TRUE, lapply(feat_df[-1], var, na.rm = TRUE) != 0)]</code></pre>
+<p>Since autoML relies on an API, I had to first initiate autoML session and then convert my data to meet the autoML model input requirements. From there, I compile the model metrics.</p>
+<pre class="r"><code>automl = function(data, data_list, minutes){
+  
+  feat_df = tk_get_timeseries_signature(unique(data$date)) %&gt;% 
+    na.omit()
+  nums = unlist(lapply(feat_df, is.numeric))
+  feat_df = feat_df[,nums]
+  feat_df = feat_df[c(TRUE, lapply(feat_df[-1], var, na.rm = TRUE) != 0)]
+  feat_df = cbind(unique(data$date)[-1], feat_df) %&gt;% rename(index=1)
+  feat_df %&lt;&gt;% select(-year.iso)
+  
+  results = data.frame(Symbol = c(), MSE = c(),
+                       MAE = c(), RMSE = c())
+  
+  h2o.init()
+  
+  for (i in data_list){
+    df = filter(data, symbol == i)
+    df = merge(df, feat_df, by.x = &quot;date&quot;, by.y = &quot;index&quot;)
+    df %&lt;&gt;% select(-date)
+    df %&lt;&gt;% mutate(lag1 = lag(price), lag2 = lag(price, k = 2),
+                   lag3 = lag(price, k = 3))
+    traindf = df[1:floor(.8*nrow(df)),] %&gt;% as.h2o()
+    validdf = df[ceiling(.8*nrow(df)):floor(nrow(df)*.9),] %&gt;% as.h2o()
+    testdf = df[ceiling(nrow(df)*.9):nrow(df),] %&gt;% as.h2o()
+    
+    x = 3:(ncol(df))
+    
+    h2o.init()
+    
+    model = h2o.automl(x = x, y = &#39;price&#39;,
+                       training_frame = traindf,
+                       validation_frame = validdf,
+                       leaderboard_frame = testdf,
+                       nfolds = 5,
+                       stopping_metric = &quot;AUTO&quot;,
+                       max_runtime_secs = (minutes * 60))
+    
+    best = model@leader
+    
+    autoML_pred = h2o.predict(best, newdata = testdf)
+    error = h2o.performance(best, newdata = testdf)
+    MSE = error@metrics$MSE
+    RMSE = error@metrics$RMSE
+    MAE = error@metrics$mae
+    
+    res = cbind(i, MSE, RMSE, MAE)
+    results = rbind(results, res)
+  } 
+  
+  results %&lt;&gt;% rename(Symbol = i)
+  return(results)
+}</code></pre>
+</div>
+<div id="stocks-4" class="section level2" number="4.4">
+<h2><span class="header-section-number">4.4</span> Stocks</h2>
+<pre class="r"><code>autoML_stocks = automl(stocks, stock_list, .5)</code></pre>
+</div>
+<div id="index" class="section level2" number="4.5">
+<h2><span class="header-section-number">4.5</span> Index</h2>
+<pre class="r"><code>autoML_index = automl(ind, ind_list, 1)</code></pre>
+</div>
+<div id="crypto-4" class="section level2" number="4.6">
+<h2><span class="header-section-number">4.6</span> Crypto</h2>
+<pre class="r"><code>autoML_crypto = automl(crypto, crypto_list, .5)</code></pre>
+</div>
+<div id="function-2" class="section level2" number="4.7">
+<h2><span class="header-section-number">4.7</span> Function</h2>
+<p>Below I calculate the error for all models except autoML (that was done within the autoML custom function) in one function.</p>
+<pre class="r"><code>res1 = function(df){
+  results =  df %&gt;% mutate(
+  errorNaive = targetPrice - Naive,
+  peNaive = errorNaive / targetPrice,
+  errorHolt = targetPrice - Holt,
+  peHolt = errorHolt / targetPrice,
+  errorArima = targetPrice - Arima,
+  peArima = errorArima / targetPrice,
+  errorProphet = targetPrice - Prophet,
+  peProphet = errorProphet / targetPrice
+)
+  results %&lt;&gt;% select(type, symbol, errorNaive, peNaive, errorHolt, peHolt, errorArima, peArima, errorProphet, peProphet)
+  
+  return(results)
+}</code></pre>
+<p>This chunk merges the error dataframe completed in the last step with all the stock/crypto names.</p>
+<pre class="r"><code>res_nhap = rbind(new_stocks, new_index, new_crypto)
+res_nhap$type = c(rep(&#39;Stock&#39;,nrow(new_stocks)), rep(&#39;Index&#39;,nrow(new_index)), rep(&#39;Crypto&#39;,nrow(new_crypto)))
+res_nhap = res1(res_nhap)</code></pre>
+<hr />
+</div>
+</div>
+<div id="results-for-naive-holt-arima-and-prophet" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Results for Naive, Holt, Arima, and Prophet</h1>
+<p>To compare the results for the models (excluding autoML), I calculate the mean absolute error (MAE), mean absolute percent error (MAPE), and root mean square error (RMSE).</p>
+<pre class="r"><code>options(scipen=999)
+results_nhap = res_nhap %&gt;%  group_by(symbol) %&gt;% mutate(
+  MAE_Naive = mean(abs(errorNaive)),
+  MAPE_Naive = mean(abs(peNaive))*100,
+  RMSE_Naive = sqrt(mean(errorNaive^2)),
+  MAE_Holt = mean(abs(errorHolt)),
+  MAPE_Holt = mean(abs(peHolt))*100,
+  RMSE_Holt = sqrt(mean(errorHolt^2)),
+  MAE_Arima = mean(abs(errorArima)),
+  MAPE_Arima = mean(abs(peArima))*100,
+  RMSE_Arima = sqrt(mean(errorArima^2)),
+  MAE_Prophet = mean(abs(errorProphet)),
+  MAPE_Prophet = mean(abs(peProphet))*100,
+  RMSE_Prophet = sqrt(mean(errorProphet^2))
+  ) %&gt;% select(c(1,2,11:22)) %&gt;% unique()</code></pre>
+<hr />
+</div>
+<div id="aggregating-results" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Aggregating Results</h1>
+<p>For apples-to-apples comparison for all models, I will use RMSE, since autoML does not calculate MAPE.</p>
+<pre class="r"><code>autoML_Results = readRDS(&#39;autoML_Results.rds&#39;) %&gt;% select(-type,-MSE) %&gt;% rename(RMSE_autoML=RMSE, MAE_autoML=MAE)
+autoML_Results$RMSE_autoML %&lt;&gt;% as.numeric()
+autoML_Results$MAE_autoML %&lt;&gt;% as.numeric()
+final_results = merge(results_nhap, autoML_Results, by.x = &#39;symbol&#39;, by.y = &#39;Symbol&#39;) %&gt;% mutate(across(is.numeric, base::round, digits=3))</code></pre>
+<div id="detailed-view" class="section level2" number="6.1">
+<h2><span class="header-section-number">6.1</span> Detailed View</h2>
+<p>Here is a chart with all accuracy metrics with their respective stock/cryptocurrency.</p>
+<pre class="r"><code>head(final_results)</code></pre>
+<pre><code>##   symbol  type MAE_Naive MAPE_Naive RMSE_Naive MAE_Holt MAPE_Holt RMSE_Holt
+## 1   ^DJI Index   162.350      0.709    202.206  143.243     0.626   184.834
+## 2  ^GSPC Index    13.934      0.549     17.719   13.145     0.518    16.580
+## 3  ^IXIC Index    62.455      0.956     75.063   62.036     0.950    72.137
+## 4  ^N225 Index   258.030      1.212    343.636  257.229     1.211   333.674
+## 5   ^NYA Index    71.135      0.585     90.486   67.413     0.554    87.601
+## 6      A Stock     1.438      1.979      1.757    1.403     1.935     1.730
+##   MAE_Arima MAPE_Arima RMSE_Arima MAE_Prophet MAPE_Prophet RMSE_Prophet
+## 1   153.128      0.671    190.596     301.782        1.332      360.628
+## 2    13.542      0.534     17.401      25.158        0.993       30.525
+## 3    62.610      0.959     73.002      56.591        0.872       69.022
+## 4   258.030      1.212    343.636     432.946        2.075      553.617
+## 5    71.135      0.585     90.486     162.773        1.339      212.442
+## 6     1.432      1.972      1.752       3.097        4.222        3.890
+##   RMSE_autoML MAE_autoML
+## 1     346.167    281.519
+## 2      49.915     44.011
+## 3     154.802    134.157
+## 4     690.358    608.160
+## 5     402.793    380.504
+## 6       1.339      1.139</code></pre>
+<pre class="r"><code># All RMSEs
+RMSE = final_results %&gt;% select(symbol,type,starts_with(&#39;RMSE&#39;)) %&gt;%  pivot_longer(3:7) %&gt;% rename(RMSE = value)
+RMSE$name %&lt;&gt;% str_replace_all(&quot;RMSE_&quot;,&quot;&quot;)</code></pre>
+<p>Below are some data visualizations comparing the accuracy of the models.</p>
+<pre class="r"><code>RMSE %&gt;%  group_by(name) %&gt;% summarize(RMSE=mean(RMSE)) %&gt;% arrange(RMSE) %&gt;% ggplot(aes(x = reorder(name,-RMSE), y = RMSE, fill = name)) + geom_col() + scale_fill_viridis_d() + coord_flip() + xlab(&#39;Forecasting Method&#39;) + ggtitle(&#39;Average Error by Forecasting Method&#39;) + labs(caption = &quot;RMSE used because MAPE was not available for autoML&quot;) + geom_text(aes(label=base::round(RMSE,3)), nudge_y = 20) + theme_minimal()</code></pre>
+<p><img src="FinalProject_files/figure-html/barplot-1.png" width="672" /></p>
+<p>The Arima, Naive, and Holt forecasts are essentially all the same (with the difference likely being due to the sample size of 100). I conclude that since no forecast can improve upon the naive forecast, none of these methods (with my selected parameters) are appropriate for predicting future values of stocks and cryptocurrencies.</p>
+<p>It is likely that autoML or Prophet could be improved by feeding more variables (some of which might supply useful information) or adjusting model parameters.</p>
+<pre class="r"><code>RMSE %&gt;% ggplot(aes(x = name, y = RMSE, fill = name)) + geom_boxplot()  + theme_minimal() + coord_flip() + ylim(0,40) + scale_fill_viridis_d() + ggtitle(&#39;Error Distribution by Model&#39;) + xlab(&#39;Model&#39;) + theme(legend.position = &quot;none&quot;)</code></pre>
+<p><img src="FinalProject_files/figure-html/boxplot-1.png" width="672" /></p>
+<pre class="r"><code>RMSE %&gt;% ggplot(aes(x = type, y = RMSE, fill = type)) + geom_violin() + coord_flip() + ylim(0,40) + scale_fill_viridis_d(begin = .2) + theme(legend.position = &quot;none&quot;) + xlab(&#39;Time Series Type&#39;) + ggtitle(&#39;Error Distribution by Type of Time Series&#39;) + theme_minimal()</code></pre>
+<p><img src="FinalProject_files/figure-html/violinplot-1.png" width="672" /></p>
+<hr />
+</div>
+</div>
+<div id="winners" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Winners</h1>
+<p>Note: There were a few ties between lowest RMSEs for a few stocks. Each tie was between Arima and Naive. Each tie will still be counted as +1 for both.</p>
+<pre class="r"><code>windf = RMSE %&gt;% group_by(symbol) %&gt;% summarize(RMSE = min(RMSE))
+winners = merge(windf, RMSE, by.x = c(&#39;symbol&#39;,&#39;RMSE&#39;), by.y = c(&#39;symbol&#39;,&#39;RMSE&#39;)) %&gt;% select(name)
+winners_summary = winners %&gt;% count(winners$name) %&gt;% rename(Model=1,NumberWins=2)</code></pre>
+<pre class="r"><code>winners_summary %&gt;% ggplot(aes(x=reorder(Model,NumberWins),y=NumberWins,fill=Model)) + geom_col() + scale_fill_viridis_d() + coord_flip() + theme_minimal() + ggtitle(&#39;Number of Wins for Each Model&#39;) + xlab(&#39;Model&#39;) + theme(legend.position = &quot;none&quot;) + geom_text(aes(label=NumberWins), nudge_y = 2)</code></pre>
+<p><img src="FinalProject_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlByZWRpY3RpbmcgQ3J5cHRjdXJyZW5jeS9TdG9jayBQcmljZXMgVXNpbmcgVGltZSBTZXJpZXMgRm9yZWNhc3RpbmcgTW9kZWxzIg0KYXV0aG9yOiAiQWxleGFuZGVyIEZvcnRtYW4iDQpvdXRwdXQ6IA0KICBodG1sX2RvY3VtZW50Og0KICAgIHRvYzogVFJVRQ0KICAgIHRvY19mbG9hdDogVFJVRQ0KICAgIG51bWJlcl9zZWN0aW9uczogVFJVRQ0KICAgIHBhZ2VkX2RmOiBUUlVFDQogICAgY29kZV9mb2xkaW5nOiAic2hvdyINCiAgICBjb2RlX2Rvd25sb2FkOiBUUlVFDQogICAgc2VsZl9jb250YWluZWQ6IEZBTFNFDQogICAgdGhlbWU6IGZsYXRseQ0KLS0tDQoNClRoZSBnb2FsIG9mIHRoaXMgZGF0YSBzY2llbmNlIHByb2plY3QgaXMgdG8gYnVpbGQgYSBtb2RlbCB3aGljaCBjYW4gYWNjdXJhdGVseSBwcmVkaWN0IGNyeXB0b2N1cnJlbmN5IGFuZCBzdG9jayBwcmljZXMgc29sZWx5IGJhc2VkIG9uIHByZXZpb3VzIHRpbWUgc2VyaWVzIGRhdGEuIE5vIGV4dGVybmFsIHByZWRpY3RvcnMgd2lsbCBiZSB1c2VkLiBUaGUgZm9yZWNhc3RpbmcgbWV0aG9kcyB0byBiZSB1c2VkIGFyZToNCiAgKyBOYWl2ZSBmb3JlY2FzdA0KICArIEhvbHQtV2ludGVycw0KICArIEFyaW1hDQogICsgaDJvJ3MgYXV0b01MIChhdXRvbWF0ZWQgbWFjaGluZSBsZWFybmluZyBtb2RlbHMpDQogICsgTWV0YSdzIChmb3JtZXJseSBGYWNlYm9vaydzKSBQcm9waGV0DQoNCiMgU2V0dXAgYW5kIFBhY2thZ2VzDQoNCmBgYHtyIHNldHVwfQ0Kc2V0d2QoZGlybmFtZShyc3R1ZGlvYXBpOjpnZXRBY3RpdmVEb2N1bWVudENvbnRleHQoKSRwYXRoKSkNCg0Ka25pdHI6Om9wdHNfY2h1bmskc2V0KGNhY2hlID0gVCwgd2FybmluZyA9IEYsIG1lc3NhZ2UgPSBGKQ0KDQppZihyZXF1aXJlKHBhY21hbik9PUZBTFNFKSBpbnN0YWxsLnBhY2thZ2VzKCJwYWNtYW4iKSAjIHBhY2thZ2UgbWFuYWdlcg0KDQpwYWNtYW46OnBfbG9hZCh0aWR5dmVyc2UsICMgZ2VuZXJhbCBmdW5jdGlvbnMNCiAgICAgICAgICAgICAgIGhyYnJ0aGVtZXMsIHJlYWN0YWJsZSwNCiAgICAgICAgICAgICAgIG1hZ3JpdHRyLCAjIGZvciAyLXdheSBwaXBlDQogICAgICAgICAgICAgICB0aWR5cXVhbnQsICMgZm9yIHRpbWUgc2VyaWVzIGRhdGENCiAgICAgICAgICAgICAgIHJ2ZXN0LCAjIHN0b2NrIG5hbWVzDQogICAgICAgICAgICAgICBkYXRhLnRhYmxlLCBEVCwgDQogICAgICAgICAgICAgICBoMm8sIHJzYW1wbGUsIHByb3BoZXQsICMgbW9kZWwgYnVpbGRpbmcNCiAgICAgICAgICAgICAgIGZvcmVjYXN0LCB0aW1ldGssIGltcHV0ZVRTLCBmcHAyLCAjIHRpbWUgc2VyaWVzIGhlbHBlcnMNCiAgICAgICAgICAgICAgIGRvUGFyYWxsZWwsIGZvcmVhY2gsIGZ1cnJyKSAjIHBhcmFsbGVsaXphdGlvbg0KYGBgDQoNCiMgR2V0IERhdGEgJiBQcmUtcHJvY2Vzc2luZw0KDQojIyBTdG9ja3MNCg0KVG8gZ2V0IHRoZSBzdG9jayBuYW1lcyBJIHdpbGwgc2NyYXBlIHRoZSBTJlAgNTAwIFdpa2lwZWRpYSBwYWdlLg0KDQpgYGB7ciBzY3JhcGluZ30NCmNvbnRlbnQgPSByZWFkX2h0bWwoImh0dHBzOi8vZW4ud2lraXBlZGlhLm9yZy93L2luZGV4LnBocD90aXRsZT1MaXN0X29mX1MlMjZQXzUwMF9jb21wYW5pZXMmb2xkaWQ9MTAxNDkyNDczNiIpDQp0YWJsZXMgPC0gY29udGVudCAlPiUgaHRtbF90YWJsZShmaWxsID0gVFJVRSkNCnRhYmxlIDwtIHRhYmxlc1tbMV1dDQpzcF9saXN0IDwtIHRhYmxlWy0xLGMoMSw3KV0NCm5hbWVzKHNwX2xpc3QpWzJdPSdBZGRlZERhdGUnDQpgYGANCg0KVG8gZW5zdXJlIHRoZSB0aW1lIHNlcmllcyBoYXMgbm8gZW1wdHkgdmFsdWVzLCBJIGFtIGZpbHRlcmluZyBzdG9ja3Mgd2hpY2ggd2VyZSBjcmVhdGVkIGFmdGVyIDIwMDkuIEFsc28sIEkgYW0gcmVtb3ZpbmcgQmVya3NoaXJlIEhhdGhhd2F5IGJlY2F1c2UgaXQgd2FzIGdpdmluZyBwcm9ibGVtcy4gQWZ0ZXIsIEkgd2lsbCBrZWVwIGp1c3QgNjAgc3RvY2tzLg0KDQpgYGB7ciBmaWx0ZXIgc3RvY2tsaXN0fQ0Kc3BfbGlzdCAlPD4lIGZpbHRlcihBZGRlZERhdGUgPCAnMjAxMC0wMS0wMScpDQpzcF9saXN0ID0gc3BfbGlzdFstNDksXQ0Kc3BfbGlzdCAlPD4lIGZpbHRlcihTeW1ib2wgIT0gIkJGLkIiKSANCnN0b2NrX2xpc3QgPSBzcF9saXN0JFN5bWJvbFsxOjYwXQ0KYGBgDQoNCkJlbG93IEkgYW0gc2V0dGluZyB0aGUgZGF0ZSByYW5nZXMgZm9yIHRoZSB0aW1lIHNlcmllcy4NCg0KYGBge3Igc2V0IGRhdGVzfQ0KYmVnID0gYXNfZGF0ZSgiMjAxNy0wMS0wMSIpDQplbmQgPSBhc19kYXRlKCIyMDIwLTAxLTAxIikNCmBgYA0KDQoNCmBgYHtyLCB3YXJuaW5nID0gRn0NCnN0b2NrcyA9IHRxX2dldCh4ID0gc3RvY2tfbGlzdCwNCiAgICAgICAgICAgICAgICBmcm9tID0gYmVnLA0KICAgICAgICAgICAgICAgIHRvID0gZW5kLCBwZXJpb2RpY2l0eSA9ICJ3ZWVrbHkiKSAjIGdldHRpbmcgdGhlIHRpbWUgc2VyaWVzIGRhdGENCg0Kc3RvY2tzICU8PiUgc2VsZWN0KHN5bWJvbCwgZGF0ZSwgYWRqdXN0ZWQpDQpgYGANCg0KYGBge3Igc3VtbWFyeXN0b2Nrc30NCmhlYWQoc3RvY2tzKQ0KYGBgDQoNCg0KIyMgSW5kZXhlcw0KDQpOb3csIEkgYW0gZ2V0dGluZyB0aGUgZGF0YSBmb3IgNSBzdG9jayBtYXJrZXQgaW5kZXhlcy4NCg0KYGBge3IgaW5kZXggbGlzdH0NCmluZF9saXN0ID0gYygnXkRKSScsJ15OWUEnLCdeR1NQQycsJ15JWElDJywnXk4yMjUnKQ0KaW5kID0gdHFfZ2V0KHggPSBpbmRfbGlzdCwgZnJvbSA9ICIyMDE1LTAxLTAxIiwgdG8gPSAiMjAxOC0wMS0wMSIsIHBlcmlvZGljaXR5ID0gIndlZWtseSIpICU+JSBzZWxlY3Qoc3ltYm9sLGRhdGUsYWRqdXN0ZWQpDQpgYGANCg0KYGBge3Igc3VtbWFyeWluZGV4fQ0KaGVhZChpbmQpDQpgYGANCg0KDQojIyBDcnlwdG8NCg0KVG8gZ2V0IHRoZSBjcnlwdG9jdXJyZW5jeSBkYXRhLCBJIGFtIHVzaW5nIHRoZSBDcnlwdG9Db21wYXJlIEFQSS4gRmlyc3QgSSBuZWVkIHRvIGRlZmluZSBzb21lIHZhcmlhYmxlcyBmb3IgdGhlIHF1ZXJ5LCBpbmNsdWRlcyBoZSBjcnlwdG9jdXJyZW5jaWVzIEkgd2FudC4NCg0KYGBge3IgYXBpfQ0KcGFjbWFuOjpwX2xvYWQoanNvbmxpdGUpDQpiYXNlID0gImh0dHBzOi8vbWluLWFwaS5jcnlwdG9jb21wYXJlLmNvbS9kYXRhL3YyL2hpc3RvZGF5P2ZzeW09Ig0KDQpuYW1lID0gYygiQlRDIiwiRVRIIiwiQk5CIiwiVVNEVCIsIlNPTCIsIkRPVCIsIkFEQSIsIlhSUCIsIkRPR0UiLCJTSElCIiwiTFRDIiwiV0JUQyIsIlVOSSIsIkJVU0QiLCJNQVRJQyIsIk1BTkEiLCJBTEdPIiwiTElOSyIsIlRIRVRBIiwiU0FORCIsIkhOVCIsIk1JT1RBIiwiQ0FLRSIsIk1LUiIsIk5FTyIsIkJUVCIsIkVHTEQiLCJWRVQiLCJJQ1AiLCJYTE0iLCJBVkFYIiwiQ1JPIiwiQVRPTSIsIk5FQVIiLCJSVU5FIikNCg0KY3J5cHRvX2xpc3QgPSBuYW1lDQoNCnQgPSAiJnRzeW09VVNEIg0KDQphZ2cgPSAiJmFnZ3JlZ2F0ZT1kYXlzIg0KDQpsaW0gPSAiJmxpbWl0PTM2MCINCg0Ka2V5ICA9ICImYXBpX2tleT03YmY0NDQ4ZmMyODE4NzA0ZWFjZTBlNDcwZTRmODdlYjEwOGU5MGU3NjBiZWY1NjJmMWRmODE2ODc2MTZiMDQwIg0KYGBgDQoNCkhlcmUgSSBhbSBwcmVwYXJpbmcgdGhlIHVybHMgd2hpY2ggSSB3aWxsIHF1ZXJ5IGluIHRoZSBuZXh0IGNvZGUgY2h1bmsuDQoNCmBgYHtyIHVybHN9DQp1cmxzID0gYyhwYXN0ZTAoYmFzZSxuYW1lWzFdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVsyXSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbM10sdCxsaW0sa2V5KSwNCiAgICAgICAgIHBhc3RlMChiYXNlLG5hbWVbNF0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzVdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVs2XSx0LGxpbSxrZXkpLA0KICAgICAgICAgcGFzdGUwKGJhc2UsbmFtZVs3XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbOF0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzldLHQsbGltLGtleSksDQogICAgICAgICBwYXN0ZTAoYmFzZSxuYW1lWzEwXSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMTFdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVsxMl0sdCxsaW0sa2V5KSwNCiAgICAgICAgIHBhc3RlMChiYXNlLG5hbWVbMTNdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVsxNF0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzE1XSx0LGxpbSxrZXkpLA0KICAgICAgICAgcGFzdGUwKGJhc2UsbmFtZVsxNl0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzE3XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMThdLHQsbGltLGtleSksDQogICAgICAgICBwYXN0ZTAoYmFzZSxuYW1lWzE5XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMjBdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVsyMV0sdCxsaW0sa2V5KSwNCiAgICAgICAgIHBhc3RlMChiYXNlLG5hbWVbMjJdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVsyM10sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzI0XSx0LGxpbSxrZXkpLA0KICAgICAgICAgcGFzdGUwKGJhc2UsbmFtZVsyNV0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzI2XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMjddLHQsbGltLGtleSksDQogICAgICAgICBwYXN0ZTAoYmFzZSxuYW1lWzI4XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMjldLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVszMF0sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzMxXSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMzJdLHQsbGltLGtleSkscGFzdGUwKGJhc2UsbmFtZVszM10sdCxsaW0sa2V5KSxwYXN0ZTAoYmFzZSxuYW1lWzM0XSx0LGxpbSxrZXkpLHBhc3RlMChiYXNlLG5hbWVbMzVdLHQsbGltLGtleSkNCikNCmBgYA0KDQpOb3cgSSB3aWxsIG1ha2UgMzUgQVBJIGNhbGxzIGF0IG9uY2UgZm9yIHRoZSBkYXRhLg0KDQpgYGB7ciBjcnlwdG8gZXh0cmFjdCBsb29wLCBldmFsID0gVH0NCmNyeXB0b2xpc3QgPSBtYXAoLnggPSB1cmxzLCAuZiA9IGZyb21KU09OKQ0KYGBgDQoNCkhlcmUgSSBjb252ZXJ0IHRoZSBkYXRhIHR5cGVzIHNvIEkgY2FuIGZvcm1hdCB0aGVtIG5lYXRseS4NCg0KYGBge3IgdW5saXN0IGNyeXB0bywgZXZhbCA9IFR9DQp1bmxpc3RfY2MgPSBmdW5jdGlvbih4KXsNCiAgdGVtcCA9IHgkRGF0YSREYXRhDQp9DQpjcnlwdG8gPSBtYXBfZGYoLnggPSBjcnlwdG9saXN0LCAuZiA9IHVubGlzdF9jYykNCmBgYA0KDQpUaGUgbGFzdCBzdGVwIGZvciB0aGUgY3J5cHRvIGRhdGEgaXMgdG8gZm9ybWF0IGl0IGluIGEgcmVhZGFibGUgZm9ybWF0Lg0KDQpgYGB7ciBvcmdhbml6ZSBjcnlwdG99DQpjcnlwdG8gJTw+JSBzZWxlY3QodGltZSwgY2xvc2UpDQpjcnlwdG8kdGltZSAlPD4lIGFzX2RhdGV0aW1lKCkgJT4lIGFzX2RhdGUoKQ0KY3J5cHRvJHN5bWJvbCA9IHJlcChuYW1lLCBlYWNoID0gKG5yb3coY3J5cHRvKS9sZW5ndGgoY3J5cHRvX2xpc3QpKSkgDQpjcnlwdG8gJTw+JSByZW5hbWUoZGF0ZSA9IHRpbWUpDQpjcnlwdG8gJTw+JSByZWxvY2F0ZShzeW1ib2wsLmJlZm9yZT1kYXRlKQ0KYGBgDQoNCmBgYHtyIHN1bW1hcnljcnlwdG99DQpoZWFkKGNyeXB0bykNCmBgYA0KDQpGb3IgdGhlIHNha2Ugb2YgbWFuYWdpbmcgbXkgUiBlbnZpcm9ubWVudCwgSSByZW1vdmUgb2JqZWN0cyB3aGljaCBhcmUgbm8gbG9uZ2VyIHVzZWZ1bCBmb3IgdGhlIHVwY29taW5nIGFuYWx5c2lzLg0KDQpgYGB7ciByZW1vdmUgb2JqZWN0cyBmcm9tIGVudiwgaW5jbHVkZSA9IEZ9DQpybShjb250ZW50LCBjcnlwdG9saXN0LCBzcF9saXN0LCB0YWJsZSwgdGFibGVzLCBhZ2csIGJhc2UsIGtleSwgbGltLCBuYW1lLCB0LCB1cmxzKQ0KYGBgDQoNClRoZSBmaW5hbCBwcmUtcHJvY2Vzc2luZyBzdGVwIGlzIHJlbmFtaW5nIHRoZSBwcmljZSB2YXJpYWJsZSBmb3IgY29uc2lzdGVuY3kuDQoNCmBgYHtyIHJlbmFtZSBhZGp1c3RlZH0NCnN0b2NrcyAlPD4lIHJlbmFtZShwcmljZSA9IGFkanVzdGVkKQ0KaW5kICU8PiUgcmVuYW1lKHByaWNlID0gYWRqdXN0ZWQpDQpjcnlwdG8gJTw+JSByZW5hbWUocHJpY2UgPSBjbG9zZSkNCmBgYA0KDQotLS0NCg0KIyBSb2xsaW5nIE9yaWdpbnMNCg0KRm9yIHRpbWUgc2VyaWVzIGRhdGEsIGl0IGlzIG5vdCBhcHByb3ByaWF0ZSB0byBzcGxpdCB0aW1lIHNlcmllcyBkYXRhIGludG8gYSB0cmFpbmluZyBhbmQgdmFsaWRhdGlvbiBzZXQgaW4gd2hpY2ggdGhlIGZpcnN0IDgwJSAob3Igb3RoZXIgYW1vdW50KSBvZiB0aGUgZGF0ZXMgYXJlIHVzZWQgZm9yIHRyYWluaW5nLiBSb2xsaW5nIG9yaWdpbiBldmFsdWF0aW9uIGZpeGVzIHRoaXMgYnkgZmlyc3QgcGFydGl0aW9uaW5nIHRoZSBkYXRhLCBidXQgdmFsaWRhdGlvbiBpcyBkb25lIHNlcXVlbnRpYWxseSBvbiBlYWNoIGRhdGUgc3RhcnRpbmcgYXQgdGhlIGJlZ2lubmluZyBvZiB0aGUgdmFsaWRhdGlvbiBwYXJ0aXRpb24uIA0KDQojIyBGdW5jdGlvbnMNCg0KU2luY2UgSSBhbSB3b3JraW5nIHdpdGggMTAwIHRpbWUgc2VyaWVzLCBJIG11c3QgYXBwbHkgZnVuY3Rpb25zIHRvIGVhY2ggc3RvY2svY3J5cHRvLiBVbmZvcnR1bmF0ZWx5LCBhbnkgYXBwbHkgZnVuY3Rpb24gd2lsbCBub3Qgd29yayBmb3IgdGhpcyBwcm9qZWN0IHNpbmNlIEkgbXVzdCBhZ2dyZWdhdGUgcmVzdWx0cyBhbmQgcnVuIG90aGVyIGZ1bmN0aW9ucyB3aXRoaW4gdGhlIGxvb3BzLiBUaGUgZmlyc3QgbG9vcCBmdW5jdGlvbiBpcyBhIHJvbGxpbmcgb3JpZ2luIGZ1bmN0aW9uIHdoaWNoIGFnZ3JlZ2F0ZXMgcmVzdWx0cy4NCg0KYGBge3Igcm9sbGluZ29yaWdpbnMgZnVufQ0Kcm9sbGluZyA9IGZ1bmN0aW9uKGRhdCwgZGF0X2xpc3QsIGluaXRpYWwpew0KICANCiAgcmVzdWx0cyA9IGRhdGEuZnJhbWUoc3BsaXRzID0gYygpLCBpZCA9IGMoKSkNCiAgDQogIGZvciAoaSBpbiBkYXRfbGlzdCl7IA0KICAgIHRlbXAgPSBmaWx0ZXIoZGF0LCBzeW1ib2wgPT0gaSkNCiAgICB0ZW1wID0gbmFfaW50ZXJwb2xhdGlvbih0ZW1wKQ0KICAgIHRlbXBfcmVzID0gcm9sbGluZ19vcmlnaW4odGVtcCwgaW5pdGlhbCA9IHdoaWNoKHRlbXAkZGF0ZSA9PSBhcy5EYXRlKGluaXRpYWwpKSwNCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFzc2VzcyA9IDEsDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjdW11bGF0aXZlID0gVFJVRSkgDQogICAgcmVzdWx0cyA9IHJiaW5kKHJlc3VsdHMsIHRlbXBfcmVzKQ0KICB9DQogIHJldHVybihyZXN1bHRzKQ0KfQ0KYGBgDQoNCkhlcmUgd2UgZXh0cmFjdCB0aGUgdHJhaW5pbmcgYW5kIHZhbGlkYXRpb24gZGF0YSBmb3IgdGhlIG1vZGVscy4NCg0KYGBge3IgZXh0cmFjdCBpbmZvfQ0KZ2V0aW5mbyA9IGZ1bmN0aW9uKGRmLCBkYXRfbGlzdCl7DQogIGRmICU8PiUgbXV0YXRlKA0KICBzeW1ib2wgPSByZXAoZGF0X2xpc3QsIGVhY2ggPSAobnJvdyhkZikvbGVuZ3RoKGRhdF9saXN0KSkpLA0KICBkYXRhID0gbWFwKC54ID0gc3BsaXRzLCAuZiA9IGFuYWx5c2lzKSwNCiAgdHJhaW5EYXRlcyA9IG1hcCgueCA9IGRhdGEsIC5mID0gZXh0cmFjdDIsICdkYXRlJyksDQogIHRyYWluUHJpY2UgPSAgbWFwKC54ID0gZGF0YSwgLmYgPSBleHRyYWN0MiwgJ3ByaWNlJyksDQogIHRhcmdldF9kYXRhID0gbWFwKC54ID0gc3BsaXRzLCAuZiA9IGFzc2Vzc21lbnQpLA0KICB0YXJnZXREYXRlID0gbWFwKC54ID0gdGFyZ2V0X2RhdGEsIC5mID0gZXh0cmFjdDIsICdkYXRlJyksDQogIHRhcmdldFByaWNlID0gIG1hcF9kYmwoLnggPSB0YXJnZXRfZGF0YSwgLmYgPSBleHRyYWN0MiwgJ3ByaWNlJykpDQogIHJldHVybihkZikNCn0NCmBgYA0KDQpTaW5jZSBJIGNyZWF0ZWQgZnVuY3Rpb25zIGFib3ZlLCBub3cgYWxsIEkgaGF2ZSB0byBkbyBpcyBwYXNzIGVhY2ggZ3JvdXAgb2YgZGF0YSAoc3RvY2tzLCBpbmRleGVzLCBjcnlwdG8pIHRocm91Z2ggdGhlIGZ1bmN0aW9ucy4NCg0KIyMgU3RvY2tzDQoNCmBgYHtyIGluZm8gZm9yIHN0b2Nrc30NCmluaXRpYWxfcyA9IHN0b2NrcyRkYXRlWy44Km5yb3coc3RvY2tzKS9sZW5ndGgoc3RvY2tfbGlzdCldDQpuZXdfc3RvY2tzID0gcm9sbGluZyhzdG9ja3MsIHN0b2NrX2xpc3QsIGluaXRpYWxfcykNCm5ld19zdG9ja3MgPSBnZXRpbmZvKG5ld19zdG9ja3MsIHN0b2NrX2xpc3QpDQpgYGANCg0KYGBge3J9DQpoZWFkKG5ld19zdG9ja3MpDQpgYGANCg0KDQojIyBJbmRleGVzDQoNCmBgYHtyIGluZm8gZm9yIGluZGV4fQ0KaW5pdGlhbF9pID0gaW5kJGRhdGVbLjgqbnJvdyhpbmQpL2xlbmd0aChpbmRfbGlzdCldDQpuZXdfaW5kZXggPSByb2xsaW5nKGluZCwgaW5kX2xpc3QsIGluaXRpYWxfaSkNCm5ld19pbmRleCA9IGdldGluZm8obmV3X2luZGV4LCBpbmRfbGlzdCkNCmBgYA0KDQpgYGB7cn0NCmhlYWQobmV3X2luZGV4KQ0KYGBgDQoNCiMjIENyeXB0bw0KDQpgYGB7ciBpbmZvIGZvciBjcnlwdG99DQppbml0aWFsX2MgPSBjcnlwdG8kZGF0ZVsuOCpucm93KGNyeXB0bykvbGVuZ3RoKGNyeXB0b19saXN0KV0NCm5ld19jcnlwdG8gPSByb2xsaW5nKGNyeXB0bywgY3J5cHRvX2xpc3QsIGluaXRpYWxfYykNCm5ld19jcnlwdG8gPSBnZXRpbmZvKG5ld19jcnlwdG8sIGNyeXB0b19saXN0KQ0KYGBgDQoNCmBgYHtyfQ0KaGVhZChuZXdfY3J5cHRvKQ0KYGBgDQoNCi0tLQ0KDQojIEZvcmVjYXN0aW5nDQoNCkluIHRoaXMgc2VjdGlvbiwgSSB3aWxsIGFwcGx5IG5haXZlLCBob2x0LXdpbnRlcnMsIGFyaW1hLCBhdXRvTUwsIGFuZCBwcm9waGV0IGZvcmVjYXN0cyB0byBlYWNoIHRpbWUgc2VyaWVzLiBMYXRlciBJIHdpbGwgY29tcGFyZSB0aGUgcmVzdWx0cyBvZiBlYWNoIG1vZGVsLg0KDQojIyBOYWl2ZSwgU0VTLCBhbmQgQVJJTUENCg0KIyMjIEZ1bmN0aW9uDQoNClRoaXMgZnVuY3Rpb24gYXBwbGllcyBuYWl2ZSwgaG9sdC13aW50ZXJzLCBhbmQgYXJpbWEgZm9yZWNhc3RzIHRvIGFsbCB0aGUgdGltZSBzZXJpZXMuIEkgZXhwbGFpbiBsYXRlciB3aHkgd2UgY2Fubm90IGFwcGx5IHRoaXMgc2ltcGx5IHRvIHRoZSBvdGhlciB0d28gbW9kZWxzLg0KDQpgYGB7ciBOSEF9DQpOSEEgPSBmdW5jdGlvbihkZil7DQogIHBsYW4obXVsdGlwcm9jZXNzKQ0KICBkZiAlPD4lIG11dGF0ZSgNCiAgTmFpdmUgPSBmdXR1cmVfbWFwKC54ID0gdHJhaW5QcmljZSwgLmYgPSBuYWl2ZSwgaCA9IDEpICU+JSANCiAgICBtYXBfZGJsKC5mID0gZXh0cmFjdDIsICJtZWFuIiksDQogIEhvbHQgPSBmdXR1cmVfbWFwKC54ID0gdHJhaW5QcmljZSwgLmYgPSBob2x0LCBoID0gMSkgJT4lIA0KICAgIG1hcF9kYmwoLmYgPSBleHRyYWN0MiwgIm1lYW4iKSwNCiAgQXJpbWEgPSBmdXR1cmVfbWFwKC54ID0gdHJhaW5QcmljZSwgLmYgPSBhdXRvLmFyaW1hKSAlPiUgDQogICAgbWFwKC5mID0gZm9yZWNhc3QsIGggPSAxKSAlPiUgDQogICAgbWFwX2RibCguZiA9IGV4dHJhY3QyLCAibWVhbiIpDQopDQogIHJldHVybihkZikNCn0NCmBgYA0KDQojIyMgU3RvY2tzDQoNCmBgYHtyIHN0b2NrcyBOSEF9DQpuZXdfc3RvY2tzID0gTkhBKG5ld19zdG9ja3MpDQpgYGANCg0KIyMjIEluZGV4ZXMNCg0KYGBge3IgaW5kZXhlcyBOSEF9DQpuZXdfaW5kZXggPSBOSEEobmV3X2luZGV4KQ0KYGBgDQoNCiMjIyBDcnlwdG8NCg0KYGBge3IgY3J5cHRvIE5IQX0NCm5ld19jcnlwdG8gPSBOSEEobmV3X2NyeXB0bykNCmBgYA0KDQojIyBQcm9waGV0DQoNCkZvciBzb21lIG9kZCByZWFzb24sIHRoZSBwcm9waGV0IGRvY3VtZW50YXRpb24gc3RhdGVzIHRoYXQgaW4gb3JkZXIgdG8gdXNlIHRoZSBtb2RlbCwgdGhlIGRhdGVzIGluIHRoZSB0aW1lIHNlcmllcyBtdXN0IGJlIG5hbWVkICJkcyIgYW5kIHRoZSBhY3R1YWwgdmFsdWVzIG11c3QgYmUgbmFtZWQgInkiLiBJZiB5b3UgdXNlIGFueSBvdGhlciBsYWJlbGluZywgUiB0aHJvd3MgZXJyb3JzLiBCZWNhdXNlIG9mIHRoaXMsIEkgaGFkIHRvIGNyZWF0ZSBhIGZ1bmN0aW9uIHdoaWNoIGNvbnZlcnRzIHRoZSBjb2x1bW5zIG5hbWVzIGFuZCB0aGVuIGFwcGxpZXMgdGhlIHByb3BoZXQgZnVuY3Rpb24uDQoNCiMjIyBGdW5jdGlvbg0KDQpgYGB7ciBwcm9waGV0bG9vcH0NCnByb3BoZXRsb29wID0gZnVuY3Rpb24obmYpew0KICBwcm9waGV0ZnVuID0gZnVuY3Rpb24oeSwgZGF0ZXMsIHRhcmdldERhdGUpew0KICAgIHBhY21hbjo6cF9sb2FkKHRpZHl2ZXJzZSwgbWFncml0dHIsIHByb3BoZXQpDQogICAgZGYgPSBhcy5kYXRhLmZyYW1lKGNiaW5kKGRhdGVzLCB5KSkgJT4lIA0KICAgICAgcmVuYW1lKGRzPTEseT0yKQ0KICAgIGRmID0gdW5uZXN0KGRmLCBjb2xzID0gYyhkcyx5KSkNCiAgICBtb2RlbCA9IHByb3BoZXQoZGYsIHllYXJseS5zZWFzb25hbGl0eSA9ICJhdXRvIiwNCiAgICAgICAgICAgICAgICAgICAgd2Vla2x5LnNlYXNvbmFsaXR5ID0gImF1dG8iKQ0KICAgIHRhcmdldERhdGUgJTw+JSBhcy5kYXRhLmZyYW1lKCkgJT4lIA0KICAgICAgcmVuYW1lKGRzPTEpDQogICAgcHJlZCA9IHByZWRpY3QobW9kZWwsIHRhcmdldERhdGUpDQogICAgcmVzID0gcHJlZCR5aGF0DQogICAgcmV0dXJuKHJlcykNCiAgfQ0KICANCiAgaSA9IDENCiAgDQogIGZvciAoaSBpbiAxOm5yb3cobmYpKXsNCiAgICB2YWwgPSBwcm9waGV0ZnVuKHkgPSBuZltpLF0kdHJhaW5QcmljZSwgZGF0ZXMgPSBuZltpLF0kdHJhaW5EYXRlcywgDQogICAgICAgICAgICAgICAgdGFyZ2V0RGF0ZSA9IG5mW2ksXSR0YXJnZXREYXRlKQ0KICAgIG5mW2ksXSRQcm9waGV0ID0gdmFsDQogICAgaSA9IGkgKyAxDQogIH0NCiAgcmV0dXJuKG5mKQ0KfQ0KYGBgDQoNCkhlcmUgSSBzaW1wbHkgYXBwbHkgdGhlIGN1c3RvbSBwcm9waGV0IGZ1bmN0aW9uIHRvIHRoZSB0aHJlZSBzZXRzIG9mIHRpbWUgc2VyaWVzLg0KDQojIyMgU3RvY2tzDQoNCmBgYHtyIHN0b2NrcyBwcm9waGV0bG9vcH0NCm5ld19zdG9ja3NbJ1Byb3BoZXQnXSA9IE5BDQpuZXdfc3RvY2tzID0gcHJvcGhldGxvb3AobmV3X3N0b2NrcykNCmBgYA0KDQoNCiMjIyBJbmRleGVzDQoNCmBgYHtyIGluZGV4IHByb3BoZXRsb29wfQ0KbmV3X2luZGV4WydQcm9waGV0J10gPSBOQQ0KbmV3X2luZGV4ID0gcHJvcGhldGxvb3AobmV3X2luZGV4KQ0KYGBgDQoNCiMjIyBDcnlwdG8NCg0KYGBge3IgY3J5cHRvIHByb3BoZXRsb29wfQ0KbmV3X2NyeXB0b1snUHJvcGhldCddID0gTkENCm5ld19jcnlwdG8gPSBwcm9waGV0bG9vcChuZXdfY3J5cHRvKQ0KYGBgDQoNCg0KDQpgYGB7ciwgZXZhbCA9IEYsIGluY2x1ZGU9Rn0NCnNhdmVSRFMobmV3X3N0b2NrcywgJ25ld19zdG9ja3MucmRzJykNCnNhdmVSRFMobmV3X2luZGV4LCAnbmV3X2luZGV4LnJkcycpDQpzYXZlUkRTKG5ld19jcnlwdG8sICduZXdfY3J5cHRvLnJkcycpDQpgYGANCg0KDQojIyBBdXRvTUwgRnVuY3Rpb24gKEFwcGxpZWQgU2VwYXJhdGVseSkNCg0KQXV0b01MIGlzIGVhc2lseSB0aGUgaGFyZGVzdCBtb2RlbCB0byBnZXQgcnVubmluZyBmb3IgbXkgbWFueSB0aW1lIHNlcmllcy4gVGhpcyBpcyBiZWNhdXNlIGF1dG9NTCBkb2VzIG5vdCBsaWtlIHRvIGxvb3AgbW9yZSB0aGFuIDMwIHRpbWVzIGluIGEgc2luZ2xlIGgybyBjb25uZWN0aW9uLiBBcyBhIHJlc3VsdCwgSSBhcHBsaWVkIHRoaXMgZnVuY3Rpb24gaW4gYSBzZXBhcmF0ZSByIGZpbGUgZm91ciB0aW1lcyAoZm9yIGEgdG90YWwgb2YgMTAwIHRpbWUgc2VyaWVzKS4gSSB0aGVuIGFwcGVuZGVkIGFsbCB0aGUgZGF0YSBhbmQgYnJvdWdodCBpdCBiYWNrIGludG8gdGhpcyBmaWxlLg0KDQpIZXJlIGlzIHRoZSBmdW5jdGlvbiB3aGljaCBjcmVhdGVzIG5ldyB2YXJpYWJsZXMgZnJvbSBqdXN0IHRoZSB0aW1lIHNlcmllcyBkYXRhIGl0c2VsZiAobm8gZXh0ZXJuYWwgZGF0YSkgc28gdGhhdCB0aGUgbWFjaGluZSBsZWFybmluZyBtb2RlbHMgaGF2ZSBtb3JlIGRhdGEgZm9yIHByZWRpY3Rpb24uDQoNCmBgYHtyIGZlYXR1cmVzLCBldmFsID0gRn0NCmZlYXRfZGYgPSB0a19nZXRfdGltZXNlcmllc19zaWduYXR1cmUodW5pcXVlKGRhdGEkZGF0ZSkpICU+JSANCiAgICBuYS5vbWl0KCkNCm51bXMgPSB1bmxpc3QobGFwcGx5KGZlYXRfZGYsIGlzLm51bWVyaWMpKQ0KZmVhdF9kZiA9IGZlYXRfZGZbLG51bXNdDQpmZWF0X2RmID0gZmVhdF9kZltjKFRSVUUsIGxhcHBseShmZWF0X2RmWy0xXSwgdmFyLCBuYS5ybSA9IFRSVUUpICE9IDApXQ0KYGBgDQoNClNpbmNlIGF1dG9NTCByZWxpZXMgb24gYW4gQVBJLCBJIGhhZCB0byBmaXJzdCBpbml0aWF0ZSBhdXRvTUwgc2Vzc2lvbiBhbmQgdGhlbiBjb252ZXJ0IG15IGRhdGEgdG8gbWVldCB0aGUgYXV0b01MIG1vZGVsIGlucHV0IHJlcXVpcmVtZW50cy4gRnJvbSB0aGVyZSwgSSBjb21waWxlIHRoZSBtb2RlbCBtZXRyaWNzLg0KDQpgYGB7ciBhdXRvbWwgZnVufQ0KYXV0b21sID0gZnVuY3Rpb24oZGF0YSwgZGF0YV9saXN0LCBtaW51dGVzKXsNCiAgDQogIGZlYXRfZGYgPSB0a19nZXRfdGltZXNlcmllc19zaWduYXR1cmUodW5pcXVlKGRhdGEkZGF0ZSkpICU+JSANCiAgICBuYS5vbWl0KCkNCiAgbnVtcyA9IHVubGlzdChsYXBwbHkoZmVhdF9kZiwgaXMubnVtZXJpYykpDQogIGZlYXRfZGYgPSBmZWF0X2RmWyxudW1zXQ0KICBmZWF0X2RmID0gZmVhdF9kZltjKFRSVUUsIGxhcHBseShmZWF0X2RmWy0xXSwgdmFyLCBuYS5ybSA9IFRSVUUpICE9IDApXQ0KICBmZWF0X2RmID0gY2JpbmQodW5pcXVlKGRhdGEkZGF0ZSlbLTFdLCBmZWF0X2RmKSAlPiUgcmVuYW1lKGluZGV4PTEpDQogIGZlYXRfZGYgJTw+JSBzZWxlY3QoLXllYXIuaXNvKQ0KICANCiAgcmVzdWx0cyA9IGRhdGEuZnJhbWUoU3ltYm9sID0gYygpLCBNU0UgPSBjKCksDQogICAgICAgICAgICAgICAgICAgICAgIE1BRSA9IGMoKSwgUk1TRSA9IGMoKSkNCiAgDQogIGgyby5pbml0KCkNCiAgDQogIGZvciAoaSBpbiBkYXRhX2xpc3Qpew0KICAgIGRmID0gZmlsdGVyKGRhdGEsIHN5bWJvbCA9PSBpKQ0KICAgIGRmID0gbWVyZ2UoZGYsIGZlYXRfZGYsIGJ5LnggPSAiZGF0ZSIsIGJ5LnkgPSAiaW5kZXgiKQ0KICAgIGRmICU8PiUgc2VsZWN0KC1kYXRlKQ0KICAgIGRmICU8PiUgbXV0YXRlKGxhZzEgPSBsYWcocHJpY2UpLCBsYWcyID0gbGFnKHByaWNlLCBrID0gMiksDQogICAgICAgICAgICAgICAgICAgbGFnMyA9IGxhZyhwcmljZSwgayA9IDMpKQ0KICAgIHRyYWluZGYgPSBkZlsxOmZsb29yKC44Km5yb3coZGYpKSxdICU+JSBhcy5oMm8oKQ0KICAgIHZhbGlkZGYgPSBkZltjZWlsaW5nKC44Km5yb3coZGYpKTpmbG9vcihucm93KGRmKSouOSksXSAlPiUgYXMuaDJvKCkNCiAgICB0ZXN0ZGYgPSBkZltjZWlsaW5nKG5yb3coZGYpKi45KTpucm93KGRmKSxdICU+JSBhcy5oMm8oKQ0KICAgIA0KICAgIHggPSAzOihuY29sKGRmKSkNCiAgICANCiAgICBoMm8uaW5pdCgpDQogICAgDQogICAgbW9kZWwgPSBoMm8uYXV0b21sKHggPSB4LCB5ID0gJ3ByaWNlJywNCiAgICAgICAgICAgICAgICAgICAgICAgdHJhaW5pbmdfZnJhbWUgPSB0cmFpbmRmLA0KICAgICAgICAgICAgICAgICAgICAgICB2YWxpZGF0aW9uX2ZyYW1lID0gdmFsaWRkZiwNCiAgICAgICAgICAgICAgICAgICAgICAgbGVhZGVyYm9hcmRfZnJhbWUgPSB0ZXN0ZGYsDQogICAgICAgICAgICAgICAgICAgICAgIG5mb2xkcyA9IDUsDQogICAgICAgICAgICAgICAgICAgICAgIHN0b3BwaW5nX21ldHJpYyA9ICJBVVRPIiwNCiAgICAgICAgICAgICAgICAgICAgICAgbWF4X3J1bnRpbWVfc2VjcyA9IChtaW51dGVzICogNjApKQ0KICAgIA0KICAgIGJlc3QgPSBtb2RlbEBsZWFkZXINCiAgICANCiAgICBhdXRvTUxfcHJlZCA9IGgyby5wcmVkaWN0KGJlc3QsIG5ld2RhdGEgPSB0ZXN0ZGYpDQogICAgZXJyb3IgPSBoMm8ucGVyZm9ybWFuY2UoYmVzdCwgbmV3ZGF0YSA9IHRlc3RkZikNCiAgICBNU0UgPSBlcnJvckBtZXRyaWNzJE1TRQ0KICAgIFJNU0UgPSBlcnJvckBtZXRyaWNzJFJNU0UNCiAgICBNQUUgPSBlcnJvckBtZXRyaWNzJG1hZQ0KICAgIA0KICAgIHJlcyA9IGNiaW5kKGksIE1TRSwgUk1TRSwgTUFFKQ0KICAgIHJlc3VsdHMgPSByYmluZChyZXN1bHRzLCByZXMpDQogIH0gDQogIA0KICByZXN1bHRzICU8PiUgcmVuYW1lKFN5bWJvbCA9IGkpDQogIHJldHVybihyZXN1bHRzKQ0KfQ0KYGBgDQoNCiMjIFN0b2Nrcw0KDQpgYGB7ciBhdXRvbWwgc3RvY2tzLCBldmFsID0gRiwgbWVzc2FnZSA9IEZ9DQphdXRvTUxfc3RvY2tzID0gYXV0b21sKHN0b2Nrcywgc3RvY2tfbGlzdCwgLjUpDQpgYGANCg0KIyMgSW5kZXgNCg0KYGBge3IgYXV0b21sIGluZGV4LCBldmFsID0gRn0NCmF1dG9NTF9pbmRleCA9IGF1dG9tbChpbmQsIGluZF9saXN0LCAxKQ0KYGBgDQoNCiMjIENyeXB0bw0KDQpgYGB7ciBhdXRvbWwgY3J5cHRvLCBldmFsID0gRn0NCmF1dG9NTF9jcnlwdG8gPSBhdXRvbWwoY3J5cHRvLCBjcnlwdG9fbGlzdCwgLjUpDQpgYGANCg0KDQoNCiMjIEZ1bmN0aW9uDQoNCkJlbG93IEkgY2FsY3VsYXRlIHRoZSBlcnJvciBmb3IgYWxsIG1vZGVscyBleGNlcHQgYXV0b01MICh0aGF0IHdhcyBkb25lIHdpdGhpbiB0aGUgYXV0b01MIGN1c3RvbSBmdW5jdGlvbikgaW4gb25lIGZ1bmN0aW9uLiANCg0KYGBge3IgZXJyb3JzfQ0KcmVzMSA9IGZ1bmN0aW9uKGRmKXsNCiAgcmVzdWx0cyA9ICBkZiAlPiUgbXV0YXRlKA0KICBlcnJvck5haXZlID0gdGFyZ2V0UHJpY2UgLSBOYWl2ZSwNCiAgcGVOYWl2ZSA9IGVycm9yTmFpdmUgLyB0YXJnZXRQcmljZSwNCiAgZXJyb3JIb2x0ID0gdGFyZ2V0UHJpY2UgLSBIb2x0LA0KICBwZUhvbHQgPSBlcnJvckhvbHQgLyB0YXJnZXRQcmljZSwNCiAgZXJyb3JBcmltYSA9IHRhcmdldFByaWNlIC0gQXJpbWEsDQogIHBlQXJpbWEgPSBlcnJvckFyaW1hIC8gdGFyZ2V0UHJpY2UsDQogIGVycm9yUHJvcGhldCA9IHRhcmdldFByaWNlIC0gUHJvcGhldCwNCiAgcGVQcm9waGV0ID0gZXJyb3JQcm9waGV0IC8gdGFyZ2V0UHJpY2UNCikNCiAgcmVzdWx0cyAlPD4lIHNlbGVjdCh0eXBlLCBzeW1ib2wsIGVycm9yTmFpdmUsIHBlTmFpdmUsIGVycm9ySG9sdCwgcGVIb2x0LCBlcnJvckFyaW1hLCBwZUFyaW1hLCBlcnJvclByb3BoZXQsIHBlUHJvcGhldCkNCiAgDQogIHJldHVybihyZXN1bHRzKQ0KfQ0KYGBgDQoNClRoaXMgY2h1bmsgbWVyZ2VzIHRoZSBlcnJvciBkYXRhZnJhbWUgY29tcGxldGVkIGluIHRoZSBsYXN0IHN0ZXAgd2l0aCBhbGwgdGhlIHN0b2NrL2NyeXB0byBuYW1lcy4NCg0KYGBge3IgY2xlYW4gZXJyb3IgZnJhbWV9DQpyZXNfbmhhcCA9IHJiaW5kKG5ld19zdG9ja3MsIG5ld19pbmRleCwgbmV3X2NyeXB0bykNCnJlc19uaGFwJHR5cGUgPSBjKHJlcCgnU3RvY2snLG5yb3cobmV3X3N0b2NrcykpLCByZXAoJ0luZGV4Jyxucm93KG5ld19pbmRleCkpLCByZXAoJ0NyeXB0bycsbnJvdyhuZXdfY3J5cHRvKSkpDQpyZXNfbmhhcCA9IHJlczEocmVzX25oYXApDQpgYGANCg0KDQotLS0NCg0KIyBSZXN1bHRzIGZvciBOYWl2ZSwgSG9sdCwgQXJpbWEsIGFuZCBQcm9waGV0DQoNClRvIGNvbXBhcmUgdGhlIHJlc3VsdHMgZm9yIHRoZSBtb2RlbHMgKGV4Y2x1ZGluZyBhdXRvTUwpLCBJIGNhbGN1bGF0ZSB0aGUgbWVhbiBhYnNvbHV0ZSBlcnJvciAoTUFFKSwgbWVhbiBhYnNvbHV0ZSBwZXJjZW50IGVycm9yIChNQVBFKSwgYW5kIHJvb3QgbWVhbiBzcXVhcmUgZXJyb3IgKFJNU0UpLg0KDQpgYGB7ciBhY2N1cmFjeX0NCm9wdGlvbnMoc2NpcGVuPTk5OSkNCnJlc3VsdHNfbmhhcCA9IHJlc19uaGFwICU+JSAgZ3JvdXBfYnkoc3ltYm9sKSAlPiUgbXV0YXRlKA0KICBNQUVfTmFpdmUgPSBtZWFuKGFicyhlcnJvck5haXZlKSksDQogIE1BUEVfTmFpdmUgPSBtZWFuKGFicyhwZU5haXZlKSkqMTAwLA0KICBSTVNFX05haXZlID0gc3FydChtZWFuKGVycm9yTmFpdmVeMikpLA0KICBNQUVfSG9sdCA9IG1lYW4oYWJzKGVycm9ySG9sdCkpLA0KICBNQVBFX0hvbHQgPSBtZWFuKGFicyhwZUhvbHQpKSoxMDAsDQogIFJNU0VfSG9sdCA9IHNxcnQobWVhbihlcnJvckhvbHReMikpLA0KICBNQUVfQXJpbWEgPSBtZWFuKGFicyhlcnJvckFyaW1hKSksDQogIE1BUEVfQXJpbWEgPSBtZWFuKGFicyhwZUFyaW1hKSkqMTAwLA0KICBSTVNFX0FyaW1hID0gc3FydChtZWFuKGVycm9yQXJpbWFeMikpLA0KICBNQUVfUHJvcGhldCA9IG1lYW4oYWJzKGVycm9yUHJvcGhldCkpLA0KICBNQVBFX1Byb3BoZXQgPSBtZWFuKGFicyhwZVByb3BoZXQpKSoxMDAsDQogIFJNU0VfUHJvcGhldCA9IHNxcnQobWVhbihlcnJvclByb3BoZXReMikpDQogICkgJT4lIHNlbGVjdChjKDEsMiwxMToyMikpICU+JSB1bmlxdWUoKQ0KYGBgDQoNCi0tLQ0KDQojIEFnZ3JlZ2F0aW5nIFJlc3VsdHMNCg0KRm9yIGFwcGxlcy10by1hcHBsZXMgY29tcGFyaXNvbiBmb3IgYWxsIG1vZGVscywgSSB3aWxsIHVzZSBSTVNFLCBzaW5jZSBhdXRvTUwgZG9lcyBub3QgY2FsY3VsYXRlIE1BUEUuDQoNCmBgYHtyIGFnZ3JlZ2F0ZX0NCmF1dG9NTF9SZXN1bHRzID0gcmVhZFJEUygnYXV0b01MX1Jlc3VsdHMucmRzJykgJT4lIHNlbGVjdCgtdHlwZSwtTVNFKSAlPiUgcmVuYW1lKFJNU0VfYXV0b01MPVJNU0UsIE1BRV9hdXRvTUw9TUFFKQ0KYXV0b01MX1Jlc3VsdHMkUk1TRV9hdXRvTUwgJTw+JSBhcy5udW1lcmljKCkNCmF1dG9NTF9SZXN1bHRzJE1BRV9hdXRvTUwgJTw+JSBhcy5udW1lcmljKCkNCmZpbmFsX3Jlc3VsdHMgPSBtZXJnZShyZXN1bHRzX25oYXAsIGF1dG9NTF9SZXN1bHRzLCBieS54ID0gJ3N5bWJvbCcsIGJ5LnkgPSAnU3ltYm9sJykgJT4lIG11dGF0ZShhY3Jvc3MoaXMubnVtZXJpYywgYmFzZTo6cm91bmQsIGRpZ2l0cz0zKSkNCmBgYA0KDQoNCiMjIERldGFpbGVkIFZpZXcNCg0KSGVyZSBpcyBhIGNoYXJ0IHdpdGggYWxsIGFjY3VyYWN5IG1ldHJpY3Mgd2l0aCB0aGVpciByZXNwZWN0aXZlIHN0b2NrL2NyeXB0b2N1cnJlbmN5Lg0KDQpgYGB7ciB0YWJsZX0NCmhlYWQoZmluYWxfcmVzdWx0cykNCmBgYA0KDQoNCg0KYGBge3IgUk1TRX0NCiMgQWxsIFJNU0VzDQpSTVNFID0gZmluYWxfcmVzdWx0cyAlPiUgc2VsZWN0KHN5bWJvbCx0eXBlLHN0YXJ0c193aXRoKCdSTVNFJykpICU+JSAgcGl2b3RfbG9uZ2VyKDM6NykgJT4lIHJlbmFtZShSTVNFID0gdmFsdWUpDQpSTVNFJG5hbWUgJTw+JSBzdHJfcmVwbGFjZV9hbGwoIlJNU0VfIiwiIikNCmBgYA0KDQoNCkJlbG93IGFyZSBzb21lIGRhdGEgdmlzdWFsaXphdGlvbnMgY29tcGFyaW5nIHRoZSBhY2N1cmFjeSBvZiB0aGUgbW9kZWxzLg0KDQoNCmBgYHtyIGJhcnBsb3R9DQpSTVNFICU+JSAgZ3JvdXBfYnkobmFtZSkgJT4lIHN1bW1hcml6ZShSTVNFPW1lYW4oUk1TRSkpICU+JSBhcnJhbmdlKFJNU0UpICU+JSBnZ3Bsb3QoYWVzKHggPSByZW9yZGVyKG5hbWUsLVJNU0UpLCB5ID0gUk1TRSwgZmlsbCA9IG5hbWUpKSArIGdlb21fY29sKCkgKyBzY2FsZV9maWxsX3ZpcmlkaXNfZCgpICsgY29vcmRfZmxpcCgpICsgeGxhYignRm9yZWNhc3RpbmcgTWV0aG9kJykgKyBnZ3RpdGxlKCdBdmVyYWdlIEVycm9yIGJ5IEZvcmVjYXN0aW5nIE1ldGhvZCcpICsgbGFicyhjYXB0aW9uID0gIlJNU0UgdXNlZCBiZWNhdXNlIE1BUEUgd2FzIG5vdCBhdmFpbGFibGUgZm9yIGF1dG9NTCIpICsgZ2VvbV90ZXh0KGFlcyhsYWJlbD1iYXNlOjpyb3VuZChSTVNFLDMpKSwgbnVkZ2VfeSA9IDIwKSArIHRoZW1lX21pbmltYWwoKQ0KYGBgDQoNClRoZSBBcmltYSwgTmFpdmUsIGFuZCBIb2x0IGZvcmVjYXN0cyBhcmUgZXNzZW50aWFsbHkgYWxsIHRoZSBzYW1lICh3aXRoIHRoZSBkaWZmZXJlbmNlIGxpa2VseSBiZWluZyBkdWUgdG8gdGhlIHNhbXBsZSBzaXplIG9mIDEwMCkuIEkgY29uY2x1ZGUgdGhhdCBzaW5jZSBubyBmb3JlY2FzdCBjYW4gaW1wcm92ZSB1cG9uIHRoZSBuYWl2ZSBmb3JlY2FzdCwgbm9uZSBvZiB0aGVzZSBtZXRob2RzICh3aXRoIG15IHNlbGVjdGVkIHBhcmFtZXRlcnMpIGFyZSBhcHByb3ByaWF0ZSBmb3IgcHJlZGljdGluZyBmdXR1cmUgdmFsdWVzIG9mIHN0b2NrcyBhbmQgY3J5cHRvY3VycmVuY2llcy4NCg0KSXQgaXMgbGlrZWx5IHRoYXQgYXV0b01MIG9yIFByb3BoZXQgY291bGQgYmUgaW1wcm92ZWQgYnkgZmVlZGluZyBtb3JlIHZhcmlhYmxlcyAoc29tZSBvZiB3aGljaCBtaWdodCBzdXBwbHkgdXNlZnVsIGluZm9ybWF0aW9uKSBvciBhZGp1c3RpbmcgbW9kZWwgcGFyYW1ldGVycy4NCg0KDQpgYGB7ciBib3hwbG90fQ0KUk1TRSAlPiUgZ2dwbG90KGFlcyh4ID0gbmFtZSwgeSA9IFJNU0UsIGZpbGwgPSBuYW1lKSkgKyBnZW9tX2JveHBsb3QoKSAgKyB0aGVtZV9taW5pbWFsKCkgKyBjb29yZF9mbGlwKCkgKyB5bGltKDAsNDApICsgc2NhbGVfZmlsbF92aXJpZGlzX2QoKSArIGdndGl0bGUoJ0Vycm9yIERpc3RyaWJ1dGlvbiBieSBNb2RlbCcpICsgeGxhYignTW9kZWwnKSArIHRoZW1lKGxlZ2VuZC5wb3NpdGlvbiA9ICJub25lIikNCmBgYA0KDQpgYGB7ciB2aW9saW5wbG90fQ0KUk1TRSAlPiUgZ2dwbG90KGFlcyh4ID0gdHlwZSwgeSA9IFJNU0UsIGZpbGwgPSB0eXBlKSkgKyBnZW9tX3Zpb2xpbigpICsgY29vcmRfZmxpcCgpICsgeWxpbSgwLDQwKSArIHNjYWxlX2ZpbGxfdmlyaWRpc19kKGJlZ2luID0gLjIpICsgdGhlbWUobGVnZW5kLnBvc2l0aW9uID0gIm5vbmUiKSArIHhsYWIoJ1RpbWUgU2VyaWVzIFR5cGUnKSArIGdndGl0bGUoJ0Vycm9yIERpc3RyaWJ1dGlvbiBieSBUeXBlIG9mIFRpbWUgU2VyaWVzJykgKyB0aGVtZV9taW5pbWFsKCkNCmBgYA0KDQotLS0NCg0KIyBXaW5uZXJzDQoNCk5vdGU6IFRoZXJlIHdlcmUgYSBmZXcgdGllcyBiZXR3ZWVuIGxvd2VzdCBSTVNFcyBmb3IgYSBmZXcgc3RvY2tzLiBFYWNoIHRpZSB3YXMgYmV0d2VlbiBBcmltYSBhbmQgTmFpdmUuIEVhY2ggdGllIHdpbGwgc3RpbGwgYmUgY291bnRlZCBhcyArMSBmb3IgYm90aC4gDQoNCmBgYHtyfQ0Kd2luZGYgPSBSTVNFICU+JSBncm91cF9ieShzeW1ib2wpICU+JSBzdW1tYXJpemUoUk1TRSA9IG1pbihSTVNFKSkNCndpbm5lcnMgPSBtZXJnZSh3aW5kZiwgUk1TRSwgYnkueCA9IGMoJ3N5bWJvbCcsJ1JNU0UnKSwgYnkueSA9IGMoJ3N5bWJvbCcsJ1JNU0UnKSkgJT4lIHNlbGVjdChuYW1lKQ0Kd2lubmVyc19zdW1tYXJ5ID0gd2lubmVycyAlPiUgY291bnQod2lubmVycyRuYW1lKSAlPiUgcmVuYW1lKE1vZGVsPTEsTnVtYmVyV2lucz0yKQ0KYGBgDQoNCmBgYHtyfQ0Kd2lubmVyc19zdW1tYXJ5ICU+JSBnZ3Bsb3QoYWVzKHg9cmVvcmRlcihNb2RlbCxOdW1iZXJXaW5zKSx5PU51bWJlcldpbnMsZmlsbD1Nb2RlbCkpICsgZ2VvbV9jb2woKSArIHNjYWxlX2ZpbGxfdmlyaWRpc19kKCkgKyBjb29yZF9mbGlwKCkgKyB0aGVtZV9taW5pbWFsKCkgKyBnZ3RpdGxlKCdOdW1iZXIgb2YgV2lucyBmb3IgRWFjaCBNb2RlbCcpICsgeGxhYignTW9kZWwnKSArIHRoZW1lKGxlZ2VuZC5wb3NpdGlvbiA9ICJub25lIikgKyBnZW9tX3RleHQoYWVzKGxhYmVsPU51bWJlcldpbnMpLCBudWRnZV95ID0gMikNCmBgYA0KDQo=</div>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeSourceEmbed("FinalProject.Rmd");
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

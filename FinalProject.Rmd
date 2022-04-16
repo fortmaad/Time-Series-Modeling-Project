@@ -1,0 +1,588 @@
+---
+title: "Predicting Cryptcurrency/Stock Prices Using Time Series Forecasting Models"
+author: "Alexander Fortman"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    number_sections: TRUE
+    paged_df: TRUE
+    code_folding: "show"
+    code_download: TRUE
+    self_contained: FALSE
+    theme: flatly
+---
+
+The goal of this data science project is to build a model which can accurately predict cryptocurrency and stock prices solely based on previous time series data. No external predictors will be used. The forecasting methods to be used are:
+  + Naive forecast
+  + Holt-Winters
+  + Arima
+  + h2o's autoML (automated machine learning models)
+  + Meta's (formerly Facebook's) Prophet
+
+# Setup and Packages
+
+```{r setup}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+knitr::opts_chunk$set(cache = T, warning = F, message = F)
+
+if(require(pacman)==FALSE) install.packages("pacman") # package manager
+
+pacman::p_load(tidyverse, # general functions
+               hrbrthemes, reactable,
+               magrittr, # for 2-way pipe
+               tidyquant, # for time series data
+               rvest, # stock names
+               data.table, DT, 
+               h2o, rsample, prophet, # model building
+               forecast, timetk, imputeTS, fpp2, # time series helpers
+               doParallel, foreach, furrr) # parallelization
+```
+
+# Get Data & Pre-processing
+
+## Stocks
+
+To get the stock names I will scrape the S&P 500 Wikipedia page.
+
+```{r scraping}
+content = read_html("https://en.wikipedia.org/w/index.php?title=List_of_S%26P_500_companies&oldid=1014924736")
+tables <- content %>% html_table(fill = TRUE)
+table <- tables[[1]]
+sp_list <- table[-1,c(1,7)]
+names(sp_list)[2]='AddedDate'
+```
+
+To ensure the time series has no empty values, I am filtering stocks which were created after 2009. Also, I am removing Berkshire Hathaway because it was giving problems. After, I will keep just 60 stocks.
+
+```{r filter stocklist}
+sp_list %<>% filter(AddedDate < '2010-01-01')
+sp_list = sp_list[-49,]
+sp_list %<>% filter(Symbol != "BF.B") 
+stock_list = sp_list$Symbol[1:60]
+```
+
+Below I am setting the date ranges for the time series.
+
+```{r set dates}
+beg = as_date("2017-01-01")
+end = as_date("2020-01-01")
+```
+
+
+```{r, warning = F}
+stocks = tq_get(x = stock_list,
+                from = beg,
+                to = end, periodicity = "weekly") # getting the time series data
+
+stocks %<>% select(symbol, date, adjusted)
+```
+
+```{r summarystocks}
+head(stocks)
+```
+
+
+## Indexes
+
+Now, I am getting the data for 5 stock market indexes.
+
+```{r index list}
+ind_list = c('^DJI','^NYA','^GSPC','^IXIC','^N225')
+ind = tq_get(x = ind_list, from = "2015-01-01", to = "2018-01-01", periodicity = "weekly") %>% select(symbol,date,adjusted)
+```
+
+```{r summaryindex}
+head(ind)
+```
+
+
+## Crypto
+
+To get the cryptocurrency data, I am using the CryptoCompare API. First I need to define some variables for the query, includes he cryptocurrencies I want.
+
+```{r api}
+pacman::p_load(jsonlite)
+base = "https://min-api.cryptocompare.com/data/v2/histoday?fsym="
+
+name = c("BTC","ETH","BNB","USDT","SOL","DOT","ADA","XRP","DOGE","SHIB","LTC","WBTC","UNI","BUSD","MATIC","MANA","ALGO","LINK","THETA","SAND","HNT","MIOTA","CAKE","MKR","NEO","BTT","EGLD","VET","ICP","XLM","AVAX","CRO","ATOM","NEAR","RUNE")
+
+crypto_list = name
+
+t = "&tsym=USD"
+
+agg = "&aggregate=days"
+
+lim = "&limit=360"
+
+key  = "&api_key=7bf4448fc2818704eace0e470e4f87eb108e90e760bef562f1df81687616b040"
+```
+
+Here I am preparing the urls which I will query in the next code chunk.
+
+```{r urls}
+urls = c(paste0(base,name[1],t,lim,key),paste0(base,name[2],t,lim,key),paste0(base,name[3],t,lim,key),
+         paste0(base,name[4],t,lim,key),paste0(base,name[5],t,lim,key),paste0(base,name[6],t,lim,key),
+         paste0(base,name[7],t,lim,key),paste0(base,name[8],t,lim,key),paste0(base,name[9],t,lim,key),
+         paste0(base,name[10],t,lim,key),paste0(base,name[11],t,lim,key),paste0(base,name[12],t,lim,key),
+         paste0(base,name[13],t,lim,key),paste0(base,name[14],t,lim,key),paste0(base,name[15],t,lim,key),
+         paste0(base,name[16],t,lim,key),paste0(base,name[17],t,lim,key),paste0(base,name[18],t,lim,key),
+         paste0(base,name[19],t,lim,key),paste0(base,name[20],t,lim,key),paste0(base,name[21],t,lim,key),
+         paste0(base,name[22],t,lim,key),paste0(base,name[23],t,lim,key),paste0(base,name[24],t,lim,key),
+         paste0(base,name[25],t,lim,key),paste0(base,name[26],t,lim,key),paste0(base,name[27],t,lim,key),
+         paste0(base,name[28],t,lim,key),paste0(base,name[29],t,lim,key),paste0(base,name[30],t,lim,key),paste0(base,name[31],t,lim,key),paste0(base,name[32],t,lim,key),paste0(base,name[33],t,lim,key),paste0(base,name[34],t,lim,key),paste0(base,name[35],t,lim,key)
+)
+```
+
+Now I will make 35 API calls at once for the data.
+
+```{r crypto extract loop, eval = T}
+cryptolist = map(.x = urls, .f = fromJSON)
+```
+
+Here I convert the data types so I can format them neatly.
+
+```{r unlist crypto, eval = T}
+unlist_cc = function(x){
+  temp = x$Data$Data
+}
+crypto = map_df(.x = cryptolist, .f = unlist_cc)
+```
+
+The last step for the crypto data is to format it in a readable format.
+
+```{r organize crypto}
+crypto %<>% select(time, close)
+crypto$time %<>% as_datetime() %>% as_date()
+crypto$symbol = rep(name, each = (nrow(crypto)/length(crypto_list))) 
+crypto %<>% rename(date = time)
+crypto %<>% relocate(symbol,.before=date)
+```
+
+```{r summarycrypto}
+head(crypto)
+```
+
+For the sake of managing my R environment, I remove objects which are no longer useful for the upcoming analysis.
+
+```{r remove objects from env, include = F}
+rm(content, cryptolist, sp_list, table, tables, agg, base, key, lim, name, t, urls)
+```
+
+The final pre-processing step is renaming the price variable for consistency.
+
+```{r rename adjusted}
+stocks %<>% rename(price = adjusted)
+ind %<>% rename(price = adjusted)
+crypto %<>% rename(price = close)
+```
+
+---
+
+# Rolling Origins
+
+For time series data, it is not appropriate to split time series data into a training and validation set in which the first 80% (or other amount) of the dates are used for training. Rolling origin evaluation fixes this by first partitioning the data, but validation is done sequentially on each date starting at the beginning of the validation partition. 
+
+## Functions
+
+Since I am working with 100 time series, I must apply functions to each stock/crypto. Unfortunately, any apply function will not work for this project since I must aggregate results and run other functions within the loops. The first loop function is a rolling origin function which aggregates results.
+
+```{r rollingorigins fun}
+rolling = function(dat, dat_list, initial){
+  
+  results = data.frame(splits = c(), id = c())
+  
+  for (i in dat_list){ 
+    temp = filter(dat, symbol == i)
+    temp = na_interpolation(temp)
+    temp_res = rolling_origin(temp, initial = which(temp$date == as.Date(initial)),
+                              assess = 1,
+                              cumulative = TRUE) 
+    results = rbind(results, temp_res)
+  }
+  return(results)
+}
+```
+
+Here we extract the training and validation data for the models.
+
+```{r extract info}
+getinfo = function(df, dat_list){
+  df %<>% mutate(
+  symbol = rep(dat_list, each = (nrow(df)/length(dat_list))),
+  data = map(.x = splits, .f = analysis),
+  trainDates = map(.x = data, .f = extract2, 'date'),
+  trainPrice =  map(.x = data, .f = extract2, 'price'),
+  target_data = map(.x = splits, .f = assessment),
+  targetDate = map(.x = target_data, .f = extract2, 'date'),
+  targetPrice =  map_dbl(.x = target_data, .f = extract2, 'price'))
+  return(df)
+}
+```
+
+Since I created functions above, now all I have to do is pass each group of data (stocks, indexes, crypto) through the functions.
+
+## Stocks
+
+```{r info for stocks}
+initial_s = stocks$date[.8*nrow(stocks)/length(stock_list)]
+new_stocks = rolling(stocks, stock_list, initial_s)
+new_stocks = getinfo(new_stocks, stock_list)
+```
+
+```{r}
+head(new_stocks)
+```
+
+
+## Indexes
+
+```{r info for index}
+initial_i = ind$date[.8*nrow(ind)/length(ind_list)]
+new_index = rolling(ind, ind_list, initial_i)
+new_index = getinfo(new_index, ind_list)
+```
+
+```{r}
+head(new_index)
+```
+
+## Crypto
+
+```{r info for crypto}
+initial_c = crypto$date[.8*nrow(crypto)/length(crypto_list)]
+new_crypto = rolling(crypto, crypto_list, initial_c)
+new_crypto = getinfo(new_crypto, crypto_list)
+```
+
+```{r}
+head(new_crypto)
+```
+
+---
+
+# Forecasting
+
+In this section, I will apply naive, holt-winters, arima, autoML, and prophet forecasts to each time series. Later I will compare the results of each model.
+
+## Naive, SES, and ARIMA
+
+### Function
+
+This function applies naive, holt-winters, and arima forecasts to all the time series. I explain later why we cannot apply this simply to the other two models.
+
+```{r NHA}
+NHA = function(df){
+  plan(multiprocess)
+  df %<>% mutate(
+  Naive = future_map(.x = trainPrice, .f = naive, h = 1) %>% 
+    map_dbl(.f = extract2, "mean"),
+  Holt = future_map(.x = trainPrice, .f = holt, h = 1) %>% 
+    map_dbl(.f = extract2, "mean"),
+  Arima = future_map(.x = trainPrice, .f = auto.arima) %>% 
+    map(.f = forecast, h = 1) %>% 
+    map_dbl(.f = extract2, "mean")
+)
+  return(df)
+}
+```
+
+### Stocks
+
+```{r stocks NHA}
+new_stocks = NHA(new_stocks)
+```
+
+### Indexes
+
+```{r indexes NHA}
+new_index = NHA(new_index)
+```
+
+### Crypto
+
+```{r crypto NHA}
+new_crypto = NHA(new_crypto)
+```
+
+## Prophet
+
+For some odd reason, the prophet documentation states that in order to use the model, the dates in the time series must be named "ds" and the actual values must be named "y". If you use any other labeling, R throws errors. Because of this, I had to create a function which converts the columns names and then applies the prophet function.
+
+### Function
+
+```{r prophetloop}
+prophetloop = function(nf){
+  prophetfun = function(y, dates, targetDate){
+    pacman::p_load(tidyverse, magrittr, prophet)
+    df = as.data.frame(cbind(dates, y)) %>% 
+      rename(ds=1,y=2)
+    df = unnest(df, cols = c(ds,y))
+    model = prophet(df, yearly.seasonality = "auto",
+                    weekly.seasonality = "auto")
+    targetDate %<>% as.data.frame() %>% 
+      rename(ds=1)
+    pred = predict(model, targetDate)
+    res = pred$yhat
+    return(res)
+  }
+  
+  i = 1
+  
+  for (i in 1:nrow(nf)){
+    val = prophetfun(y = nf[i,]$trainPrice, dates = nf[i,]$trainDates, 
+                targetDate = nf[i,]$targetDate)
+    nf[i,]$Prophet = val
+    i = i + 1
+  }
+  return(nf)
+}
+```
+
+Here I simply apply the custom prophet function to the three sets of time series.
+
+### Stocks
+
+```{r stocks prophetloop}
+new_stocks['Prophet'] = NA
+new_stocks = prophetloop(new_stocks)
+```
+
+
+### Indexes
+
+```{r index prophetloop}
+new_index['Prophet'] = NA
+new_index = prophetloop(new_index)
+```
+
+### Crypto
+
+```{r crypto prophetloop}
+new_crypto['Prophet'] = NA
+new_crypto = prophetloop(new_crypto)
+```
+
+
+
+```{r, eval = F, include=F}
+saveRDS(new_stocks, 'new_stocks.rds')
+saveRDS(new_index, 'new_index.rds')
+saveRDS(new_crypto, 'new_crypto.rds')
+```
+
+
+## AutoML Function (Applied Separately)
+
+AutoML is easily the hardest model to get running for my many time series. This is because autoML does not like to loop more than 30 times in a single h2o connection. As a result, I applied this function in a separate r file four times (for a total of 100 time series). I then appended all the data and brought it back into this file.
+
+Here is the function which creates new variables from just the time series data itself (no external data) so that the machine learning models have more data for prediction.
+
+```{r features, eval = F}
+feat_df = tk_get_timeseries_signature(unique(data$date)) %>% 
+    na.omit()
+nums = unlist(lapply(feat_df, is.numeric))
+feat_df = feat_df[,nums]
+feat_df = feat_df[c(TRUE, lapply(feat_df[-1], var, na.rm = TRUE) != 0)]
+```
+
+Since autoML relies on an API, I had to first initiate autoML session and then convert my data to meet the autoML model input requirements. From there, I compile the model metrics.
+
+```{r automl fun}
+automl = function(data, data_list, minutes){
+  
+  feat_df = tk_get_timeseries_signature(unique(data$date)) %>% 
+    na.omit()
+  nums = unlist(lapply(feat_df, is.numeric))
+  feat_df = feat_df[,nums]
+  feat_df = feat_df[c(TRUE, lapply(feat_df[-1], var, na.rm = TRUE) != 0)]
+  feat_df = cbind(unique(data$date)[-1], feat_df) %>% rename(index=1)
+  feat_df %<>% select(-year.iso)
+  
+  results = data.frame(Symbol = c(), MSE = c(),
+                       MAE = c(), RMSE = c())
+  
+  h2o.init()
+  
+  for (i in data_list){
+    df = filter(data, symbol == i)
+    df = merge(df, feat_df, by.x = "date", by.y = "index")
+    df %<>% select(-date)
+    df %<>% mutate(lag1 = lag(price), lag2 = lag(price, k = 2),
+                   lag3 = lag(price, k = 3))
+    traindf = df[1:floor(.8*nrow(df)),] %>% as.h2o()
+    validdf = df[ceiling(.8*nrow(df)):floor(nrow(df)*.9),] %>% as.h2o()
+    testdf = df[ceiling(nrow(df)*.9):nrow(df),] %>% as.h2o()
+    
+    x = 3:(ncol(df))
+    
+    h2o.init()
+    
+    model = h2o.automl(x = x, y = 'price',
+                       training_frame = traindf,
+                       validation_frame = validdf,
+                       leaderboard_frame = testdf,
+                       nfolds = 5,
+                       stopping_metric = "AUTO",
+                       max_runtime_secs = (minutes * 60))
+    
+    best = model@leader
+    
+    autoML_pred = h2o.predict(best, newdata = testdf)
+    error = h2o.performance(best, newdata = testdf)
+    MSE = error@metrics$MSE
+    RMSE = error@metrics$RMSE
+    MAE = error@metrics$mae
+    
+    res = cbind(i, MSE, RMSE, MAE)
+    results = rbind(results, res)
+  } 
+  
+  results %<>% rename(Symbol = i)
+  return(results)
+}
+```
+
+## Stocks
+
+```{r automl stocks, eval = F, message = F}
+autoML_stocks = automl(stocks, stock_list, .5)
+```
+
+## Index
+
+```{r automl index, eval = F}
+autoML_index = automl(ind, ind_list, 1)
+```
+
+## Crypto
+
+```{r automl crypto, eval = F}
+autoML_crypto = automl(crypto, crypto_list, .5)
+```
+
+
+
+## Function
+
+Below I calculate the error for all models except autoML (that was done within the autoML custom function) in one function. 
+
+```{r errors}
+res1 = function(df){
+  results =  df %>% mutate(
+  errorNaive = targetPrice - Naive,
+  peNaive = errorNaive / targetPrice,
+  errorHolt = targetPrice - Holt,
+  peHolt = errorHolt / targetPrice,
+  errorArima = targetPrice - Arima,
+  peArima = errorArima / targetPrice,
+  errorProphet = targetPrice - Prophet,
+  peProphet = errorProphet / targetPrice
+)
+  results %<>% select(type, symbol, errorNaive, peNaive, errorHolt, peHolt, errorArima, peArima, errorProphet, peProphet)
+  
+  return(results)
+}
+```
+
+This chunk merges the error dataframe completed in the last step with all the stock/crypto names.
+
+```{r clean error frame}
+res_nhap = rbind(new_stocks, new_index, new_crypto)
+res_nhap$type = c(rep('Stock',nrow(new_stocks)), rep('Index',nrow(new_index)), rep('Crypto',nrow(new_crypto)))
+res_nhap = res1(res_nhap)
+```
+
+
+---
+
+# Results for Naive, Holt, Arima, and Prophet
+
+To compare the results for the models (excluding autoML), I calculate the mean absolute error (MAE), mean absolute percent error (MAPE), and root mean square error (RMSE).
+
+```{r accuracy}
+options(scipen=999)
+results_nhap = res_nhap %>%  group_by(symbol) %>% mutate(
+  MAE_Naive = mean(abs(errorNaive)),
+  MAPE_Naive = mean(abs(peNaive))*100,
+  RMSE_Naive = sqrt(mean(errorNaive^2)),
+  MAE_Holt = mean(abs(errorHolt)),
+  MAPE_Holt = mean(abs(peHolt))*100,
+  RMSE_Holt = sqrt(mean(errorHolt^2)),
+  MAE_Arima = mean(abs(errorArima)),
+  MAPE_Arima = mean(abs(peArima))*100,
+  RMSE_Arima = sqrt(mean(errorArima^2)),
+  MAE_Prophet = mean(abs(errorProphet)),
+  MAPE_Prophet = mean(abs(peProphet))*100,
+  RMSE_Prophet = sqrt(mean(errorProphet^2))
+  ) %>% select(c(1,2,11:22)) %>% unique()
+```
+
+---
+
+# Aggregating Results
+
+For apples-to-apples comparison for all models, I will use RMSE, since autoML does not calculate MAPE.
+
+```{r aggregate}
+autoML_Results = readRDS('autoML_Results.rds') %>% select(-type,-MSE) %>% rename(RMSE_autoML=RMSE, MAE_autoML=MAE)
+autoML_Results$RMSE_autoML %<>% as.numeric()
+autoML_Results$MAE_autoML %<>% as.numeric()
+final_results = merge(results_nhap, autoML_Results, by.x = 'symbol', by.y = 'Symbol') %>% mutate(across(is.numeric, base::round, digits=3))
+```
+
+
+## Detailed View
+
+Here is a chart with all accuracy metrics with their respective stock/cryptocurrency.
+
+```{r table}
+head(final_results)
+```
+
+
+
+```{r RMSE}
+# All RMSEs
+RMSE = final_results %>% select(symbol,type,starts_with('RMSE')) %>%  pivot_longer(3:7) %>% rename(RMSE = value)
+RMSE$name %<>% str_replace_all("RMSE_","")
+```
+
+
+Below are some data visualizations comparing the accuracy of the models.
+
+
+```{r barplot}
+RMSE %>%  group_by(name) %>% summarize(RMSE=mean(RMSE)) %>% arrange(RMSE) %>% ggplot(aes(x = reorder(name,-RMSE), y = RMSE, fill = name)) + geom_col() + scale_fill_viridis_d() + coord_flip() + xlab('Forecasting Method') + ggtitle('Average Error by Forecasting Method') + labs(caption = "RMSE used because MAPE was not available for autoML") + geom_text(aes(label=base::round(RMSE,3)), nudge_y = 20) + theme_minimal()
+```
+
+The Arima, Naive, and Holt forecasts are essentially all the same (with the difference likely being due to the sample size of 100). I conclude that since no forecast can improve upon the naive forecast, none of these methods (with my selected parameters) are appropriate for predicting future values of stocks and cryptocurrencies.
+
+It is likely that autoML or Prophet could be improved by feeding more variables (some of which might supply useful information) or adjusting model parameters.
+
+
+```{r boxplot}
+RMSE %>% ggplot(aes(x = name, y = RMSE, fill = name)) + geom_boxplot()  + theme_minimal() + coord_flip() + ylim(0,40) + scale_fill_viridis_d() + ggtitle('Error Distribution by Model') + xlab('Model') + theme(legend.position = "none")
+```
+
+```{r violinplot}
+RMSE %>% ggplot(aes(x = type, y = RMSE, fill = type)) + geom_violin() + coord_flip() + ylim(0,40) + scale_fill_viridis_d(begin = .2) + theme(legend.position = "none") + xlab('Time Series Type') + ggtitle('Error Distribution by Type of Time Series') + theme_minimal()
+```
+
+---
+
+# Winners
+
+Note: There were a few ties between lowest RMSEs for a few stocks. Each tie was between Arima and Naive. Each tie will still be counted as +1 for both. 
+
+```{r}
+windf = RMSE %>% group_by(symbol) %>% summarize(RMSE = min(RMSE))
+winners = merge(windf, RMSE, by.x = c('symbol','RMSE'), by.y = c('symbol','RMSE')) %>% select(name)
+winners_summary = winners %>% count(winners$name) %>% rename(Model=1,NumberWins=2)
+```
+
+```{r}
+winners_summary %>% ggplot(aes(x=reorder(Model,NumberWins),y=NumberWins,fill=Model)) + geom_col() + scale_fill_viridis_d() + coord_flip() + theme_minimal() + ggtitle('Number of Wins for Each Model') + xlab('Model') + theme(legend.position = "none") + geom_text(aes(label=NumberWins), nudge_y = 2)
+```
+
